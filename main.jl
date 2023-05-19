@@ -157,7 +157,7 @@ function run_all(m_set_range, moving_day_range, out_of_sample, scaling, save_all
 end
 
 #Default parameters for 'run_all' function
-m_set_range = 12 #Set one value for one test case (within range 1:12)
+m_set_range = 11 #Set one value for one test case (within range 1:12)
 moving_day_range = 0 #(within range 0:87)
 out_of_sample = false #true/false (if true, moving day cannot be more than 86)
 scaling = true #true/false (for learning)
