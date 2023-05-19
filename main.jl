@@ -157,18 +157,10 @@ function run_all(m_set_range, moving_day_range, out_of_sample, scaling, save_all
 end
 
 #Default parameters for 'run_all' function
-m_set_range = 10 #Set one value for one test case (within range 1:12)
+m_set_range = 1:12 #Set one value for one test case (within range 1:12)
 moving_day_range = 0 #(within range 0:87)
 out_of_sample = false #true/false (if true, moving day cannot be more than 86)
 scaling = true #true/false (for learning)
 save_all = false #true/false (for saving individual results)
 RT_revenue, Exp_revenue = run_all(m_set_range, moving_day_range, out_of_sample, scaling, save_all)
 
-
-#Reading JSON file to check
-# dict2 = Dict()
-# open("Results/Bid_results_learn.json", "r") do f
-#     global dict2
-#     dicttxt = read(f,String)  # file information to string
-#     dict2=JSON.parse(dicttxt)  # parse and transform data
-# end
