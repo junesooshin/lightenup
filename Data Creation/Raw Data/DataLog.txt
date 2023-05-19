@@ -1,0 +1,5 @@
+The folders  here comprise of all the data
+
+In Frequency should all the frequency zip files from Fingrid be located to run the scripts.
+
+

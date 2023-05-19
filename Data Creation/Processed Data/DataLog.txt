@@ -1,0 +1,7 @@
+The folders  here comprise of all the processed data
+
+Should be the location for where the scripts saves the files
+
+
+
+
