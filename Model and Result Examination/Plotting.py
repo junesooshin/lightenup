@@ -269,7 +269,7 @@ def plot_Revenue_Test(Array):
 
     # Set up the plot
     #fig, ax = plt.subplots()
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 20), sharex=True)
 
     # Define a list of colors for models
     colors = ['red' , 'blue', 'green', 'orange']
