@@ -134,10 +134,10 @@ function run_all(m_set_range, moving_day_range, out_of_sample, scaling, save_all
                                       "det" => result_det["RT"]["revenue"],
                                       "sto" => result_sto["RT"]["revenue"],
                                       "learn" => result_learn["RT"]["revenue"])
-                Exp_revenue[id] = Dict("rule" => result_rule["Bid"]["obj"],
-                                       "det" => result_det["Bid"]["obj"],
-                                       "sto" => result_sto["Bid"]["obj"],
-                                       "learn" => result_learn["Bid"]["obj"])
+                Exp_revenue[id] = Dict("rule" => sum(result_rule["Bid"]["obj_t"]),
+                                       "det" => sum(result_det["Bid"]["obj_t"]),
+                                       "sto" => sum(result_sto["Bid"]["obj_t"]),
+                                       "learn" => sum(result_learn["Bid"]["obj_t"]))
                 #Save all solutions
                 if save_all == true
                     save_dict(result_rule, "rule_$(id)")
@@ -150,17 +150,20 @@ function run_all(m_set_range, moving_day_range, out_of_sample, scaling, save_all
         end
     end
     #Save RT revenue and expected revenue results for all models
-    save_dict(RT_revenue, "RT_revenue")
-    save_dict(Exp_revenue, "Exp_revenue")
+    if out_of_sample == true
+        save_dict(RT_revenue, "RT_revenue_OoS")
+        save_dict(Exp_revenue, "Exp_revenue_OoS")
+    elseif out_of_sample == false
+        save_dict(RT_revenue, "RT_revenue")
+        save_dict(Exp_revenue, "Exp_revenue")
 
     return RT_revenue, Exp_revenue
 end
 
 #Default parameters for 'run_all' function
-m_set_range = 1:12 #Set one value for one test case (within range 1:12)
-moving_day_range = 0 #(within range 0:87)
-out_of_sample = false #true/false (if true, moving day cannot be more than 86)
+m_set_range = 1 #Set one value for one test case (within range 1:12)
+moving_day_range = 62 #(within range 0:87)
+out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for learning)
-save_all = false #true/false (for saving individual results)
+save_all = true #true/false (for saving individual results)
 RT_revenue, Exp_revenue = run_all(m_set_range, moving_day_range, out_of_sample, scaling, save_all)
-

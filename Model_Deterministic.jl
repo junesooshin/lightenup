@@ -97,7 +97,7 @@ function Deterministic_Model(Data)
     optimize!(Model_Deterministic)
 
     ############         Results         ###############
-    Results_det = Dict("obj" => objective_value(Model_Deterministic),
+    Results_det = Dict("obj_t" => [value.(G_DA[t])+value.(G_FD2[t])+value.(G_FD1[t])-value.(C_Deg[t]) for t in T],
                         "b_FD1_up" => [value.(b_FD1_up[t]) for t in T],
                         "b_FD2_up" => [value.(b_FD2_up[t]) for t in T],
                         "b_FD1_dn" => [value.(b_FD1_dn[t]) for t in T],

@@ -190,7 +190,8 @@ function Training_Learning_Model(Data, Data_index)
                         "q_DA_up" => [value.(q_DA_up[f]) for f in 1:(F+1)],
                         "q_DA_dn" => [value.(q_DA_dn[f]) for f in 1:(F+1)],
                         "q_FD1_up" => [value.(q_FD1_up[f]) for f in 1:(F+1)],
-                        "q_FD1_dn" => [value.(q_FD1_dn[f]) for f in 1:(F+1)])
+                        "q_FD1_dn" => [value.(q_FD1_dn[f]) for f in 1:(F+1)],
+                        "X" => X)
 
     @info("Learning model solved!")
     return learn_solution
@@ -252,13 +253,16 @@ function Create_bid_Learning(Data, Results_from_training, forecast_day_2023)
     y_FD1_dn =  mean(Data["f_FD1_y_dn_t"], dims=2)
 
     #Calculate expected revenue
-    G_DA = sum(f_DA[t]*(b_DA_up[t] - b_DA_dn[t]) for t in 1:24)
-    G_FD2 = sum(f_lambda_FD2_up[t]*b_FD2_up[t]*y_FD2_up[t]+f_lambda_FD2_dn[t]*b_FD2_dn[t]*y_FD2_dn[t] for t in 1:24) #Forecast price, trained acceptance, bid
-    G_FD1 = sum(f_lambda_FD1_up[t]*b_FD1_up[t]*y_FD1_up[t]+f_lambda_FD1_dn[t]*b_FD1_dn[t]*y_FD1_dn[t] for t in 1:24) #Forecast price, trained acceptance, bid
-    C_Deg = sum(((b_DA_up[t] - b_DA_dn[t])) / (2*Data["SOC_max"]) * Data["Cost_per_cycle"] for t in 1:24) #Degradation only from DA contribution
-    obj = G_DA + G_FD2 + G_FD1 - C_Deg
+    G_DA_t = f_DA.*(b_DA_up .- b_DA_dn)
+    G_FD2_t = f_lambda_FD2_up.*b_FD2_up.*y_FD2_up.+f_lambda_FD2_dn.*b_FD2_dn.*y_FD2_dn #Forecast price, trained acceptance, bid
+    G_FD1_t = f_lambda_FD1_up.*b_FD1_up.*y_FD1_up.+f_lambda_FD1_dn.*b_FD1_dn.*y_FD1_dn #Forecast price, trained acceptance, bid
+    C_Deg_t = ((b_DA_up .- b_DA_dn)) ./ (2*Data["SOC_max"]) .* Data["Cost_per_cycle"] #Degradation only from DA contribution
+    obj_t = G_DA_t + G_FD2_t + G_FD1_t - C_Deg_t
 
-    Bid_Results = Dict("obj" => obj,
+    soc = transpose(mean(Results_from_training["SOC"], dims=2))
+    X = Results_from_training["X"]
+
+    Bid_Results = Dict("obj_t" => obj_t,
                        "b_FD2_up" => b_FD2_up, "b_FD2_dn" => b_FD2_dn,
                        "b_DA_up"  => b_DA_up , "b_DA_dn"  => b_DA_dn,
                        "b_FD1_up" => b_FD1_up, "b_FD1_dn" => b_FD1_dn,
@@ -269,7 +273,13 @@ function Create_bid_Learning(Data, Results_from_training, forecast_day_2023)
                        "q_DA_up" => q_DA_up,
                        "q_DA_dn" => q_DA_dn,
                        "q_FD1_up" => q_FD1_up,
-                       "q_FD1_dn" => q_FD1_dn
+                       "q_FD1_dn" => q_FD1_dn,
+                       "SOC" => soc,
+                       "f_FD2_y_up_t" => y_FD2_up,
+                       "f_FD2_y_dn_t" => y_FD2_dn,
+                       "f_FD1_y_up_t" => y_FD1_up,
+                       "f_FD1_y_dn_t" => y_FD1_dn,
+                       "X" => X
                        )
     
     @info("New learning solution saved!")
