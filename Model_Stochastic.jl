@@ -183,6 +183,12 @@ function create_bid_stochastic(Data, sto_solution)
     p_all_up = mean(reshape(sto_solution["p_all_up"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
     p_all_dn = mean(reshape(sto_solution["p_all_dn"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
 
+    soc = mean(reshape(sto_solution["SOC"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
+    f_FD1_y_up_t = mean(reshape(sto_solution["f_FD1_y_up_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
+    f_FD1_y_dn_t = mean(reshape(sto_solution["f_FD1_y_dn_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
+    f_FD2_y_up_t = mean(sto_solution["f_FD2_y_up_tw_input"], dims=2)[:,1]
+    f_FD2_y_dn_t = mean(sto_solution["f_FD2_y_dn_tw_input"], dims=2)[:,1]
+
     #f_lambda_FD2_up = mean(Data["f_FD2_up_tw"], dims=2)[:,1]
     #f_lambda_FD2_dn = mean(Data["f_FD2_dn_tw"], dims=2)[:,1]
     #f_lambda_FD1_up = mean(reshape(Data["f_FD1_up_tw"], (24,size_W1*size_W2*size_W3)), dims=2)[:,1]
@@ -197,14 +203,14 @@ function create_bid_stochastic(Data, sto_solution)
     f_lambda_FD1_dn = Data["f_FD1_dn"]
 
     #Calculate expected revenue
-    G_FD2 = sum(f_lambda_FD2_up[t]*p_FD2_up[t] + f_lambda_FD2_dn[t]*p_FD2_dn[t] for t in 1:24)
-    G_FD1 = sum(f_lambda_FD1_up[t]*p_FD1_up[t] + f_lambda_FD1_dn[t]*p_FD1_dn[t] for t in 1:24)
-    G_DA = sum(f_DA[t]*(b_DA_up[t] - b_DA_dn[t]) for t in 1:24)
-    C_Deg = sum((p_all_dn[t] + p_all_up[t])/(2*sto_solution["SOC_max"]) * sto_solution["Cost_per_cycle"] for t in 1:24)
-    obj = G_FD2 + G_FD1 + G_DA - C_Deg
+    G_FD2_t = f_lambda_FD2_up.*p_FD2_up .+ f_lambda_FD2_dn.*p_FD2_dn 
+    G_FD1_t = f_lambda_FD1_up.*p_FD1_up .+ f_lambda_FD1_dn.*p_FD1_dn 
+    G_DA_t = f_DA.*(b_DA_up .- b_DA_dn) 
+    C_Deg_t = (p_all_dn .+ p_all_up)./(2*sto_solution["SOC_max"]) .* sto_solution["Cost_per_cycle"] 
+    obj_t = G_FD2_t + G_FD1_t + G_DA_t - C_Deg_t
     
     Bid_Results = Dict(
-                    "obj" => obj,
+                    "obj_t" => obj_t,
                     "G_FD2" => sto_solution["G_FD2"],
                     "G_DA" => sto_solution["G_DA"],
                     "G_FD1"=> sto_solution["G_FD1"],
@@ -218,7 +224,26 @@ function create_bid_stochastic(Data, sto_solution)
                     "f_lambda_FD2_up" => f_lambda_FD2_up, 
                     "f_lambda_FD2_dn" => f_lambda_FD2_dn,
                     "f_lambda_FD1_up" => f_lambda_FD1_up, 
-                    "f_lambda_FD1_dn" => f_lambda_FD1_dn)
+                    "f_lambda_FD1_dn" => f_lambda_FD1_dn,
+                    "f_DA_t" => f_DA,
+                    "SOC" => soc,
+                    "f_FD1_y_up_t" => f_FD1_y_up_t,
+                    "f_FD1_y_dn_t" => f_FD1_y_dn_t,
+                    "f_FD2_y_up_t" => f_FD2_y_up_t,
+                    "f_FD2_y_dn_t" => f_FD2_y_dn_t,
+                    #Inputs
+                    "f_FD2_up_tw_input" => sto_solution["f_FD2_up_tw_input"],
+                    "f_FD2_dn_tw_input" => sto_solution["f_FD2_dn_tw_input"],
+                    "f_DA_tw_input" => sto_solution["f_DA_tw_input"],
+                    "f_FD1_up_tw_input" => sto_solution["f_FD1_up_tw_input"],
+                    "f_FD1_dn_tw_input" => sto_solution["f_FD1_dn_tw_input"],
+                    "f_a_up_tw_input" => sto_solution["f_a_up_tw_input"],
+                    "f_a_dn_tw_input" => sto_solution["f_a_dn_tw_input"],
+                    "f_FD1_y_up_tw_input" => sto_solution["f_FD1_y_up_tw_input"],
+                    "f_FD1_y_dn_tw_input" => sto_solution["f_FD1_y_dn_tw_input"],
+                    "f_FD2_y_up_tw_input" => sto_solution["f_FD2_y_up_tw_input"],
+                    "f_FD2_y_dn_tw_input" => sto_solution["f_FD2_y_dn_tw_input"]
+                    )
     
     @info("New stochastic solution saved!")
     return Bid_Results

@@ -120,12 +120,12 @@ function baseline_model_DA_and_FCR_D(Data, forecast_day_2023, Threshold_Max_coef
     end
 
     #Calculate expected revenue
-    G_DA = sum(Spot[t]*E_nom*(Spot_Up[t] - Spot_Dn[t]) for t in 1:24)
-    G_FD2 = sum(FCR_D_Up[t]*E_nom*FCR_D_Up_action[t]+FCR_D_Dn[t]*E_nom*FCR_D_Dn_action[t] for t in 1:24)
-    C_Deg = sum((E_nom*(Spot_Up[t] - Spot_Dn[t])) / (2*SOC_max) * Cost_per_cycle for t in 1:24) #Degradation cost only comes from DA contribution
-    obj = G_DA + G_FD2 - C_Deg
+    G_DA_t = Spot.*E_nom.*(Spot_Up .- Spot_Dn) 
+    G_FD2_t = FCR_D_Up.*E_nom.*FCR_D_Up_action.+FCR_D_Dn.*E_nom.*FCR_D_Dn_action
+    C_Deg_t = (E_nom.*(Spot_Up .- Spot_Dn)) ./ (2*SOC_max) .* Cost_per_cycle  #Degradation cost only comes from DA contribution
+    obj_t = G_DA_t + G_FD2_t - C_Deg_t
 
-    Results = Dict("obj" => obj,
+    Results = Dict("obj_t" => obj_t,
                    "f_DA_t" => Spot,
                    "SOC" => SOC, 
                    "b_DA_up" => Spot_Up*E_nom, 
