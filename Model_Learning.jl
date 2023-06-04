@@ -1,10 +1,23 @@
 
-function Training_Learning_Model(Data, Data_index)
+function Training_Learning_Model(Data, Data_index, Architecture)
+
+    #=
+    Architecture = "GA" -> General architecture. Coefficient for each feature.
+                 = "HA" -> Hourly architecture. Coefficient for each feature and hour in a day
+    =#
+
+
 
     # Pick the indexes
     idx = Data_index["N_train"]
     D = Data_index["D_train"]
     H = Data_index["H"]
+
+    if Architecture == "GA"
+        HF = [1]
+    elseif Architecture == "HA"
+        HF = H
+    end
 
     # Collect FEATURES SPECIFIC INFORMATION
     X = Data["X"] # All the features
@@ -63,14 +76,15 @@ function Training_Learning_Model(Data, Data_index)
 
     
     # VALUES TO OPTIMIZE
-    @variable(Model_Learning, q_FD2_up[1:(F+1)])                # Coefficient for FCR-D D-2 up. Offset + all features
-    @variable(Model_Learning, q_FD2_dn[1:(F+1)])                # Coefficient for FCR-D D-2 dn. Offset + all features
-    @variable(Model_Learning, q_DA_up[1:(F+1)])                 # Coefficient for DA up. Offset + all features
-    @variable(Model_Learning, q_DA_dn[1:(F+1)])                 # Coefficient for DA dn. Offset + all features
-    @variable(Model_Learning, q_FD1_up[1:(F+1)])                # Coefficient for FCR-D D-1 up. Offset + all features
-    @variable(Model_Learning, q_FD1_dn[1:(F+1)])                # Coefficient for FCR-D D-1 dn. Offset + all features
-    @variable(Model_Learning , SOC[H,D] >= 0)                   # State of charge variable 
+    @variable(Model_Learning, q_FD2_up[HF,1:(F+1)])                # Coefficient for FCR-D D-2 up. Offset + all features
+    @variable(Model_Learning, q_FD2_dn[HF,1:(F+1)])                # Coefficient for FCR-D D-2 dn. Offset + all features
+    @variable(Model_Learning, q_DA_up[HF,1:(F+1)])                 # Coefficient for DA up. Offset + all features
+    @variable(Model_Learning, q_DA_dn[HF,1:(F+1)])                 # Coefficient for DA dn. Offset + all features
+    @variable(Model_Learning, q_FD1_up[HF,1:(F+1)])                # Coefficient for FCR-D D-1 up. Offset + all features
+    @variable(Model_Learning, q_FD1_dn[HF,1:(F+1)])                # Coefficient for FCR-D D-1 dn. Offset + all features
 
+
+    @variable(Model_Learning , SOC[H,D] >= 0)                   # State of charge variable 
 
     # Helper variables
     @variable(Model_Learning , p_FD2_up[H,D] >= 0)              # Accepted Bid FCR-D D-2 Upregulation/Discharging (SLACK)
@@ -160,12 +174,21 @@ function Training_Learning_Model(Data, Data_index)
     # Here you are setting the constraint for the bids for each days within the whole training period
     # As we have features for a long time period, we divide the features in days (24 hours) and great day/i constraints
 
-    @constraint(Model_Learning, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[f] * X[ h,d, f] for f in 1:F) + q_FD2_up[F+1])
-    @constraint(Model_Learning, FD2_Coef_con_dn[h in H, d in D], b_FD2_dn[h,d] == sum(q_FD2_dn[f] * X[ h,d, f] for f in 1:F) + q_FD2_dn[F+1])
-    @constraint(Model_Learning, DA_Coef_con_up[h in H, d in D], b_DA_up[h,d] == sum(q_DA_up[f] * X[ h,d, f] for f in 1:F) + q_DA_up[F+1])
-    @constraint(Model_Learning, DA_Coef_con_dn[h in H, d in D], b_DA_dn[h,d] == sum(q_DA_dn[f] * X[ h,d, f] for f in 1:F) + q_DA_dn[F+1])
-    @constraint(Model_Learning, FD1_Coef_con_up[h in H, d in D], b_FD1_up[h,d] == sum(q_FD1_up[f] * X[ h,d, f] for f in 1:F) + q_FD1_up[F+1])
-    @constraint(Model_Learning, FD1_Coef_con_dn[h in H, d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[F+1])
+    if Architecture == "GA"
+        @constraint(Model_Learning, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[1,f] * X[ h,d, f] for f in 1:F) + q_FD2_up[1,F+1])
+        @constraint(Model_Learning, FD2_Coef_con_dn[h in H, d in D], b_FD2_dn[h,d] == sum(q_FD2_dn[1,f] * X[ h,d, f] for f in 1:F) + q_FD2_dn[1,F+1])
+        @constraint(Model_Learning, DA_Coef_con_up[h in H,  d in D], b_DA_up[h,d] == sum(q_DA_up[1,f] * X[ h,d, f] for f in 1:F) + q_DA_up[1,F+1])
+        @constraint(Model_Learning, DA_Coef_con_dn[h in H,  d in D], b_DA_dn[h,d] == sum(q_DA_dn[1,f] * X[ h,d, f] for f in 1:F) + q_DA_dn[1,F+1])
+        @constraint(Model_Learning, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[1,F+1])
+        @constraint(Model_Learning, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[1,F+1])
+    elseif Architecture == "HA"
+        @constraint(Model_Learning, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_up[h,F+1])
+        @constraint(Model_Learning, FD2_Coef_con_dn[h in H, d in D], b_FD2_dn[h,d] == sum(q_FD2_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_dn[h,F+1])
+        @constraint(Model_Learning, DA_Coef_con_up[h in H,  d in D], b_DA_up[h,d] == sum(q_DA_up[h,f] * X[ h,d, f] for f in 1:F) + q_DA_up[h,F+1])
+        @constraint(Model_Learning, DA_Coef_con_dn[h in H,  d in D], b_DA_dn[h,d] == sum(q_DA_dn[h,f] * X[ h,d, f] for f in 1:F) + q_DA_dn[h,F+1])
+        @constraint(Model_Learning, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[h,F+1])
+        @constraint(Model_Learning, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[h,F+1])
+    end
     
     ####################################################
     ############         Solving         ###############
@@ -176,7 +199,6 @@ function Training_Learning_Model(Data, Data_index)
     ####################################################
     ############         Results         ###############
     ####################################################
-
     learn_solution = Dict(           
                         "p_FD2_up" => [value.(p_FD2_up[h,d]) for h in H, d in D],
                         "p_FD2_dn" => [value.(p_FD2_dn[h,d]) for h in H, d in D],
@@ -185,12 +207,12 @@ function Training_Learning_Model(Data, Data_index)
                         "p_FD1_up" => [value.(p_FD1_up[h,d]) for h in H, d in D],
                         "p_FD1_dn" => [value.(p_FD1_dn[h,d]) for h in H, d in D],
                         "SOC" => [value.(SOC[h,d]) for h in H, d in D],
-                        "q_FD2_up" => [value.(q_FD2_up[f]) for f in 1:(F+1)], # Added (F+1) because we want to save the offset as well
-                        "q_FD2_dn" => [value.(q_FD2_dn[f]) for f in 1:(F+1)],
-                        "q_DA_up" => [value.(q_DA_up[f]) for f in 1:(F+1)],
-                        "q_DA_dn" => [value.(q_DA_dn[f]) for f in 1:(F+1)],
-                        "q_FD1_up" => [value.(q_FD1_up[f]) for f in 1:(F+1)],
-                        "q_FD1_dn" => [value.(q_FD1_dn[f]) for f in 1:(F+1)],
+                        "q_FD2_up" => [value.(q_FD2_up[hf,f]) for hf in HF, f in 1:(F+1)], # Added (F+1) because we want to save the offset as well
+                        "q_FD2_dn" => [value.(q_FD2_dn[hf,f]) for hf in HF, f in 1:(F+1)],
+                        "q_DA_up" => [value.(q_DA_up[hf,f]) for hf in HF, f in 1:(F+1)],
+                        "q_DA_dn" => [value.(q_DA_dn[hf,f]) for hf in HF, f in 1:(F+1)],
+                        "q_FD1_up" => [value.(q_FD1_up[hf,f]) for hf in HF, f in 1:(F+1)],
+                        "q_FD1_dn" => [value.(q_FD1_dn[hf,f]) for hf in HF, f in 1:(F+1)],
                         "X" => X)
 
     @info("Learning model solved!")
