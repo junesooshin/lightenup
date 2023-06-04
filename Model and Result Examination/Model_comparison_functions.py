@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from tabulate import tabulate
+from PIL import Image
 
 def json_to_df(json_file_path, orient='columns'):
     """
@@ -403,10 +405,14 @@ def import_test_case(current_directory, choose_id):
     for key, value in Results_rule['RT'].items():
         rule_RT[key] = np.array(value)
 
-    return det_bid, det_RT, learn_bid, learn_RT, sto_bid, sto_RT, rule_bid, rule_RT
+    results = {'Det': {'Bid':det_bid, 'RT':det_RT}, 
+               'Rule': {'Bid':rule_bid, 'RT':rule_RT}, 
+               'Learn': {'Bid':learn_bid, 'RT':learn_RT}, 
+               'Sto': {'Bid':sto_bid, 'RT':sto_RT}}
+    return results
 
 
-def bid_plots(bid_result, model, color):
+def bid_plots(bid_result, model, color, save):
     #Bid quantity plots with SOC
     fig, ax1 = plt.subplots(figsize=(7,5))
 
@@ -448,9 +454,12 @@ def bid_plots(bid_result, model, color):
     labels = labels1 + labels2
     plt.legend(handles, labels, loc='upper left', bbox_to_anchor=(0.1, -0.15), ncol=4)
 
-    plt.show()
+    if save == True:
+        plt.savefig(f'Result_plots/bid_plots_{model}.png', bbox_inches='tight')
 
-def plot_training_price(with_acceptance, bid_result, model, color):
+    # plt.show()
+
+def plot_training_price(with_acceptance, bid_result, model, color, save):
     # Plot prices used for training
     fig, ax2 = plt.subplots(figsize=(7,5))
 
@@ -555,9 +564,12 @@ def plot_training_price(with_acceptance, bid_result, model, color):
     ax2.legend(loc='upper left', bbox_to_anchor=(0.15, -0.15), ncol=3)
     ax2.set_title(model, fontsize=14)
 
-    plt.show()
+    if save == True:
+        plt.savefig(f'Result_plots/training_price_{model}.png', bbox_inches='tight')
 
-def plot_bidding_price(bid_result, model, color):
+    # plt.show()
+
+def plot_bidding_price(bid_result, model, color, save):
     # Plot FCR-D bidding prices
     fig, ax3 = plt.subplots(figsize=(7,5))
     x = np.arange(1,25)
@@ -574,9 +586,12 @@ def plot_bidding_price(bid_result, model, color):
     ax3.legend(loc='upper left', bbox_to_anchor=(0.15, -0.15), ncol=3)
     ax3.set_title(model, fontsize=14)
 
-    plt.show()
+    if save == True:
+        plt.savefig(f'Result_plots/bidding_price_{model}.png', bbox_inches='tight')
 
-def plot_accepted_price(data_RT_input, model):
+    # plt.show()
+
+def plot_accepted_price(data_RT_input, model, save):
     # Plot RT accepted prices and RT DA price
     fig, ax = plt.subplots(2,2, figsize=(16, 10))
     x = np.arange(1,25)
@@ -636,9 +651,12 @@ def plot_accepted_price(data_RT_input, model):
     ax1_3.set_ylim(-0.05,1.05)
     ax1_3.set_yticks([0,1])
 
+    if save == True:
+        plt.savefig(f'Result_plots/accepted_price_{model}.png', bbox_inches='tight')
+
     fig.suptitle(model, fontsize=12) #Remove this for overleaf export
 
-def plot_coefficients(learn_bid):
+def plot_coefficients(learn_bid, color, save):
     # Plot coefficients
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up", "1"]
     q_FD2_up = learn_bid["q_FD2_up"]
@@ -652,61 +670,185 @@ def plot_coefficients(learn_bid):
 
     ax4.set_ylabel('Coefficients', fontsize=12)
     ax4.set_xlabel('Features', fontsize=12)
-    ax4.plot(q_FD2_up, label='q_FD2_up', marker = '.')
-    ax4.plot(q_FD2_dn, label='q_FD2_dn', marker = '.')
-    ax4.plot(q_FD1_up, label='q_FD1_up', marker = '.')
-    ax4.plot(q_FD1_dn, label='q_FD1_dn', marker = '.')
-    ax4.plot(q_DA_up, label='q_DA_up', marker = '.')
-    ax4.plot(q_DA_dn, label='q_DA_dn', marker = '.')
+    ax4.plot(q_FD2_up, label='q_FD2_up', marker = '.', color=color['FD2_up'])
+    ax4.plot(q_FD2_dn, label='q_FD2_dn', marker = '.', color=color['FD2_dn'])
+    ax4.plot(q_FD1_up, label='q_FD1_up', marker = '.', color=color['FD1_up'])
+    ax4.plot(q_FD1_dn, label='q_FD1_dn', marker = '.', color=color['FD1_dn'])
+    ax4.plot(q_DA_up, label='q_DA_up', marker = '.', color=color['DA_up'])
+    ax4.plot(q_DA_dn, label='q_DA_dn', marker = '.', color=color['DA_dn'])
     ax4.set_xticks([i for i in range(0,len(q_FD2_up))], Feature_Selection, rotation=40)
     ax4.legend(loc='upper left', bbox_to_anchor=(0.2, -0.25), ncol=2, fontsize=12)
 
-    plt.show()
+    if save == True:
+        plt.savefig('Result_plots/coefficients.png', bbox_inches='tight')
 
-def plot_exp_and_RT_revenue(det_RT, det_bid, sto_RT, sto_bid, learn_RT, learn_bid, rule_RT, rule_bid):
+    # plt.show()
+
+def plot_exp_and_RT_revenue(det_RT, det_bid, sto_RT, sto_bid, learn_RT, learn_bid, rule_RT, rule_bid, plot, save):
     # Plot RT and expected revenue
     fig, ax6 = plt.subplots(figsize=(7,5))
     x = np.arange(1,25)
 
-    ax6.plot(x, det_RT['revenue_t'], label='Det_RT', marker = '.', color='C0') 
-    ax6.plot(x, det_bid['obj_t'], label='Det_Exp', linestyle='dashed', color='C0') 
-
-    ax6.plot(x, sto_RT['revenue_t'], label='Sto_RT', marker = '.', color='C1') 
-    ax6.plot(x, sto_bid['obj_t'], label='Sto_Exp', linestyle='dashed', color='C1') 
-
-    ax6.plot(x, learn_RT['revenue_t'], label='Learn_RT', marker = '.', color='C2') 
-    ax6.plot(x, learn_bid['obj_t'].flatten(), label='Learn_Exp', linestyle='dashed', color='C2') 
-
-    ax6.plot(x, rule_RT['revenue_t'], label='Rule_RT', marker = '.', color='C3') 
-    ax6.plot(x, rule_bid['obj_t'], label='Rule_Exp', linestyle='dashed', color='C3') 
+    if 'Det' in plot:
+        ax6.plot(x, det_RT['revenue_t'], label='Det_RT', marker = '.', color='C0') 
+        ax6.plot(x, det_bid['obj_t'], label='Det_Exp', linestyle='dashed', color='C0') 
+    elif 'Sto' in plot:
+        ax6.plot(x, sto_RT['revenue_t'], label='Sto_RT', marker = '.', color='C1') 
+        ax6.plot(x, sto_bid['obj_t'], label='Sto_Exp', linestyle='dashed', color='C1') 
+    elif 'Learn' in plot:
+        ax6.plot(x, learn_RT['revenue_t'], label='Learn_RT', marker = '.', color='C2') 
+        ax6.plot(x, learn_bid['obj_t'].flatten(), label='Learn_Exp', linestyle='dashed', color='C2') 
+    elif 'Rule' in plot:
+        ax6.plot(x, rule_RT['revenue_t'], label='Rule_RT', marker = '.', color='C3') 
+        ax6.plot(x, rule_bid['obj_t'], label='Rule_Exp', linestyle='dashed', color='C3') 
+    elif 'all' in plot:
+        ax6.plot(x, det_RT['revenue_t'], label='Det_RT', marker = '.', color='C0') 
+        ax6.plot(x, det_bid['obj_t'], label='Det_Exp', linestyle='dashed', color='C0') 
+        ax6.plot(x, sto_RT['revenue_t'], label='Sto_RT', marker = '.', color='C1') 
+        ax6.plot(x, sto_bid['obj_t'], label='Sto_Exp', linestyle='dashed', color='C1')
+        ax6.plot(x, learn_RT['revenue_t'], label='Learn_RT', marker = '.', color='C2') 
+        ax6.plot(x, learn_bid['obj_t'].flatten(), label='Learn_Exp', linestyle='dashed', color='C2') 
+        ax6.plot(x, rule_RT['revenue_t'], label='Rule_RT', marker = '.', color='C3') 
+        ax6.plot(x, rule_bid['obj_t'], label='Rule_Exp', linestyle='dashed', color='C3')
 
     ax6.set_ylabel('Revenue [EUR]', fontsize=12)
     ax6.set_xlabel('Hours', fontsize=12)
     ax6.set_xticks([1,6,12,18,24])
-    ax6.legend(loc='upper left', bbox_to_anchor=(-0.05, -0.15), ncol=4, fontsize=12)
+    if 'all' in plot:
+        ax6.legend(loc='upper left', bbox_to_anchor=(-0.05, -0.15), ncol=4, fontsize=12)
+    else:
+        ax6.legend(loc='upper left', bbox_to_anchor=(0.15, -0.15), ncol=2, fontsize=12)
 
-    plt.show()
+    if save == True:
+        plt.savefig(f'Result_plots/exp_and_RT_revenue_{plot}.png', bbox_inches='tight')
+    # plt.show()
 
-def plot_battery_dynamics(RTresult):
+def plot_exp_and_RT_revenue(results, rev_plot, save):
+    # Plot RT and expected revenue
+    fig, ax6 = plt.subplots(figsize=(7,5))
+    x = np.arange(1,25)
+
+    if 'Det' in rev_plot:
+        ax6.plot(x, results['Det']['RT']['revenue_t'], label='Det_RT', marker = '.', color='C0') 
+        ax6.plot(x, results['Det']['Bid']['obj_t'], label='Det_Exp', linestyle='dashed', color='C0') 
+    elif 'Sto' in rev_plot:
+        ax6.plot(x, results['Sto']['RT']['revenue_t'], label='Sto_RT', marker = '.', color='C1') 
+        ax6.plot(x, results['Sto']['Bid']['obj_t'], label='Sto_Exp', linestyle='dashed', color='C1') 
+    elif 'Learn' in rev_plot:
+        ax6.plot(x, results['Learn']['RT']['revenue_t'], label='Learn_RT', marker = '.', color='C2') 
+        ax6.plot(x, results['Learn']['Bid']['obj_t'].flatten(), label='Learn_Exp', linestyle='dashed', color='C2') 
+    elif 'Rule' in rev_plot:
+        ax6.plot(x, results['Rule']['RT']['revenue_t'], label='Rule_RT', marker = '.', color='C3') 
+        ax6.plot(x, results['Rule']['Bid']['obj_t'], label='Rule_Exp', linestyle='dashed', color='C3') 
+    elif 'all' in rev_plot:
+        ax6.plot(x, results['Det']['RT']['revenue_t'], label='Det_RT', marker = '.', color='C0') 
+        ax6.plot(x, results['Det']['Bid']['obj_t'], label='Det_Exp', linestyle='dashed', color='C0') 
+        ax6.plot(x, results['Sto']['RT']['revenue_t'], label='Sto_RT', marker = '.', color='C1') 
+        ax6.plot(x, results['Sto']['Bid']['obj_t'], label='Sto_Exp', linestyle='dashed', color='C1') 
+        ax6.plot(x, results['Learn']['RT']['revenue_t'], label='Learn_RT', marker = '.', color='C2') 
+        ax6.plot(x, results['Learn']['Bid']['obj_t'].flatten(), label='Learn_Exp', linestyle='dashed', color='C2') 
+        ax6.plot(x, results['Rule']['RT']['revenue_t'], label='Rule_RT', marker = '.', color='C3') 
+        ax6.plot(x, results['Rule']['Bid']['obj_t'], label='Rule_Exp', linestyle='dashed', color='C3') 
+
+    ax6.set_ylabel('Revenue [EUR]', fontsize=12)
+    ax6.set_xlabel('Hours', fontsize=12)
+    ax6.set_xticks([1,6,12,18,24])
+    if 'all' in rev_plot:
+        ax6.legend(loc='upper left', bbox_to_anchor=(-0.05, -0.15), ncol=4, fontsize=12)
+    else:
+        ax6.legend(loc='upper left', bbox_to_anchor=(0.15, -0.15), ncol=2, fontsize=12)
+
+    if save == True:
+        plt.savefig(f'Result_plots/exp_and_RT_revenue_{rev_plot}.png', bbox_inches='tight')
+    # plt.show()
+
+def plot_battery_dynamics(RT_result, model, save):
     # Plot battery dynamics
     fig, ax5 = plt.subplots(figsize=(7, 5))
     x = np.arange(1,25)
 
-    ax5.plot(x, RTresult['p_all_up'], label='p_all_up', marker = '.')
-    ax5.plot(x, RTresult['p_all_dn'], label='p_all_dn', marker = '.')
-    ax5.plot(x, RTresult['failure_up'], label='failure_up')
-    ax5.plot(x, RTresult['failure_dn'], label='failure_dn')
-    ax5.plot(x, RTresult['p_dis_max']*np.ones(24), '--' ,label='p_dis_max', color='grey')
-    ax5.plot(x, RTresult['p_ch_max']*np.ones(24), '--' ,label='p_ch_max', color='grey')
-    ax5.legend(loc='center left', bbox_to_anchor=(0.15,-0.2), ncol=3)
+    ax5.plot(x, RT_result['p_all_up'], label='p_all_up', marker = '.')
+    ax5.plot(x, RT_result['p_all_dn'], label='p_all_dn', marker = '.')
+    ax5.plot(x, RT_result['failure_up'], label='failure_up')
+    ax5.plot(x, RT_result['failure_dn'], label='failure_dn')
+    ax5.plot(x, RT_result['p_dis_max']*np.ones(24), '--' ,label='p_dis_max', color='grey')
+    ax5.plot(x, RT_result['p_ch_max']*np.ones(24), '--' ,label='p_ch_max', color='grey')
+    # ax5.legend(loc='center left', bbox_to_anchor=(0.15,-0.2), ncol=3)
     ax5.set_xlabel('Hours')
     ax5.set_ylabel('Power [MW]')
     ax5.set_xticks([1,6,12,18,24])
 
     ax5_1 = ax5.twinx()
-    ax5_1.plot(x, RTresult['SOC']/6, color='black', label='SOC', marker = '.')
+    ax5_1.plot(x, RT_result['SOC']/6, color='black', label='SOC', marker = '.')
     ax5_1.set_ylabel('SOC [p.u.]', fontsize=12)
     ax5_1.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
     ax5_1.set_ylim([-0.05,1.05])
 
+    # Combine the legends
+    handles1, labels1 = ax5.get_legend_handles_labels()
+    handles2, labels2 = ax5_1.get_legend_handles_labels()
+    handles = handles1 + handles2
+    labels = labels1 + labels2
+    plt.legend(handles, labels, loc='upper left', bbox_to_anchor=(0.1, -0.15), ncol=4)
+
+    if save == True:
+        plt.savefig(f'Result_plots/battery_dynamics_{model}.png', bbox_inches='tight')
+
+    # plt.show()
+
+def save_plots(current_directory, choose_id, save, model, with_acceptance, rev_plot):
+    #Fix color schemes
+    color = {'FD2_up': '#FFA500', # orange
+            'FD2_dn': '#2986cc', # blue
+            'DA_up': '#f44336', # red 
+            'DA_dn': 'green', # green
+            'FD1_up': '#b26d02', # brown orange
+            'FD1_dn': '#674ea7', # darkgreen
+            'SOC': 'black'}
+
+    results = import_test_case(current_directory, choose_id)
+
+    #Plotting functions
+    bid_plots(results[model]['Bid'], model, color, save)
+    plot_training_price(with_acceptance, results[model]['Bid'], model, color, save)
+    plot_bidding_price(results[model]['Bid'], model, color, save)
+    plot_accepted_price(results[model]['RT'], model, save)
+    if 'Learn' in model:
+        plot_coefficients(results[model]['Bid'], color, save)
+    plot_exp_and_RT_revenue(results, rev_plot, save)
+    plot_battery_dynamics(results[model]['RT'], model, save)
+
+    #Print summary
+    print('Test case: ', choose_id)
+    results = [["RT", results['Rule']['RT']['revenue'], results['Det']['RT']['revenue'], results['Sto']['RT']['revenue'], results['Learn']['RT']['revenue']],
+        ["Expected", sum(results['Rule']['Bid']['obj_t']), sum(results['Det']['Bid']['obj_t']), sum(results['Sto']['Bid']['obj_t']), sum(results['Learn']['Bid']['obj_t'].flatten())]]
+    headers = ["Rule", "Deterministic", "Stochastic", "Learning"]
+    table = tabulate(results, headers, tablefmt="grid")
+    print(table)
+
+def view_plots(model, rev_plot):
+    # Select plots
+    image_paths = [f'Result_plots/bid_plots_{model}.png', 
+                f'Result_plots/training_price_{model}.png', 
+                f'Result_plots/bidding_price_{model}.png',
+                f'Result_plots/exp_and_RT_revenue_{rev_plot}.png',
+                f'Result_plots/battery_dynamics_{model}.png']
+    if 'Learn' in model:
+        image_paths.append(f'Result_plots/coefficients.png')
+
+    fig, axes = plt.subplots(3, 2, figsize=(10, 10))
+
+    for i, ax in enumerate(axes.flatten() if 'Learn' in model else axes.flatten()[0:5]):
+        image = Image.open(image_paths[i])
+        ax.imshow(image)
+        ax.axis("off")  # Remove the axis labels
+            
+        # Adjust the spacing between subplots
+        plt.tight_layout()
+    # plt.show()
+
+    fig, ax1 = plt.subplots(figsize=(10, 10))
+    image = Image.open(f'Result_plots/accepted_price_{model}.png')
+    ax1.imshow(image)
+    ax1.axis("off")
     plt.show()
