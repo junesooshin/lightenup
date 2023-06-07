@@ -820,11 +820,13 @@ def save_plots(current_directory, choose_id, save, model, with_acceptance, rev_p
 
     #Print summary
     print('Test case: ', choose_id)
-    results = [["RT", results['Rule']['RT']['revenue'], results['Det']['RT']['revenue'], results['Sto']['RT']['revenue'], results['Learn']['RT']['revenue']],
-        ["Expected", sum(results['Rule']['Bid']['obj_t']), sum(results['Det']['Bid']['obj_t']), sum(results['Sto']['Bid']['obj_t']), sum(results['Learn']['Bid']['obj_t'].flatten())]]
+    result_summary = [["RT", results['Rule']['RT']['revenue'], results['Det']['RT']['revenue'], results['Sto']['RT']['revenue'], results['Learn']['RT']['revenue']],
+                      ["Expected", sum(results['Rule']['Bid']['obj_t']), sum(results['Det']['Bid']['obj_t']), sum(results['Sto']['Bid']['obj_t']), sum(results['Learn']['Bid']['obj_t'].flatten())]]
     headers = ["Rule", "Deterministic", "Stochastic", "Learning"]
-    table = tabulate(results, headers, tablefmt="grid")
+    table = tabulate(result_summary, headers, tablefmt="grid")
     print(table)
+
+    return results
 
 def view_plots(model, rev_plot):
     # Select plots
