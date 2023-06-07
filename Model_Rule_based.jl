@@ -42,30 +42,34 @@ function baseline_model_DA_and_FCR_D(Data, forecast_day_2023, Threshold_Max_coef
     
     # Initialize the first State of charge
     #SOC[1] = Initialize_SOC_baseline_model(FCR_D_Dn, FCR_D_Up, Spot) 
-    SOC[1] = Data["SOC_0"]
+    SOC_ini = Data["SOC_0"]
 
-    if SOC[1] == 1 # Based on the initial state of charge set the FCR-D up/dn accordingly.
-        FCR_D_Up_action[1] = 1
-    elseif SOC[1] == 0
-        FCR_D_Dn_action[1] = 1
-    else
-        FCR_D_Up_action[1] = SOC[1]
-        FCR_D_Dn_action[1] = 1 - SOC[1]
+    # if SOC[1] == 1 # Based on the initial state of charge set the FCR-D up/dn accordingly.
+    #     FCR_D_Up_action[1] = 1
+    # elseif SOC[1] == 0
+    #     FCR_D_Dn_action[1] = 1
+    # else
+    #     FCR_D_Up_action[1] = SOC[1]
+    #     FCR_D_Dn_action[1] = 1 - SOC[1]
     
-    end
+    # end
 
     # Across the whole day, 24 hours
-    for h in 2:24
-        
+    for h in 1:24
+        if h == 1
+            soc_last_h = SOC_ini
+        else
+            soc_last_h = SOC[h-1]
+        end
         # Do I have a full battery?
-        if SOC[h-1] == 1
+        if soc_last_h == 1
             # Then I can't do down regulation or charge battery. i.e. Spot_action[h] != -1 AND FCR_D_Dn_action != 1
             
             # Is the spot price larger than the max threshold?
             if Spot[h] >= Threshold_Max 
                 # Then discharge, because it is profitable. i.e. Spot_action[h] = 1
                 Spot_Up[h] = output_Capacity/E_nom  
-                SOC[h] = 0 
+                SOC[h] = soc_last_h - output_Capacity/E_nom  # How much the battery is able to discharge
 
             elseif Spot[h] < Threshold_Max 
                 # Then just bid in upregulation and assume zero activation
@@ -74,14 +78,14 @@ function baseline_model_DA_and_FCR_D(Data, forecast_day_2023, Threshold_Max_coef
             end
         
         # Do I have a empty battery?
-        elseif SOC[h-1] == 0
+        elseif soc_last_h == 0
             # Then I can't do up regulation or discharge battery. i.e. Spot_action[h] != 1 AND FCR_D_up_action != 1
             
             # Is the spot price smaller than the min threshold
             if Spot[h] <= Threshold_Min
                 # Then charge because it is beneficial. i.e. Spot_action[h] = -1
                 Spot_Dn[h] = input_Capacity/E_nom  
-                SOC[h] = SOC[h-1] + input_Capacity/E_nom  # How much the battery is able to charge
+                SOC[h] = soc_last_h + input_Capacity/E_nom  # How much the battery is able to charge
 
             elseif Spot[h] > Threshold_Min
                 # Then just bid in Downregulation and assume zero activation
@@ -90,31 +94,32 @@ function baseline_model_DA_and_FCR_D(Data, forecast_day_2023, Threshold_Max_coef
             end
         
         # Do I have an arbitrary amount in the battery
-        elseif SOC[h-1] < 1 && SOC[h-1] > 0
+        elseif soc_last_h < 1 && soc_last_h > 0
             # Now I can do both Upregulation or DownRegulation equivalent to what is in my battery
 
             # Is the spot price smaller than the min threshold
             if Spot[h] <= Threshold_Min
 
-                if input_Capacity/E_nom < 1- SOC[h-1]
+                if input_Capacity/E_nom < 1- soc_last_h
                     Spot_Dn[h] = input_Capacity/E_nom
-                elseif input_Capacity/E_nom >= 1- SOC[h-1]
-                    Spot_Dn[h] = 1 - SOC[h-1]
+                elseif input_Capacity/E_nom >= 1- soc_last_h
+                    Spot_Dn[h] = 1 - soc_last_h
                 end
-                SOC[h] = SOC[h-1] + abs(Spot_Dn[h]) # How much the battery is able to Charge
+                SOC[h] = soc_last_h + abs(Spot_Dn[h]) # How much the battery is able to Charge
             
             # Is the spot price larger than the max threshold
             elseif Spot[h] >= Threshold_Max
-                if output_Capacity/E_nom < SOC[h-1]
+                if output_Capacity/E_nom < soc_last_h
                     Spot_Up[h] = output_Capacity/E_nom
-                elseif output_Capacity/E_nom >= SOC[h-1]
-                    Spot_Up[h] = SOC[h-1]
-                SOC[h] = SOC[h-1] + abs(Spot_Up[h])
+                elseif output_Capacity/E_nom >= soc_last_h
+                    Spot_Up[h] = soc_last_h
+                SOC[h] = soc_last_h - abs(Spot_Up[h])
                 end
             # Else just do FCR-D up and down at the same time!!
             else
-                FCR_D_Up_action[h] = SOC[h-1] # 
-                FCR_D_Dn_action[h] = 1- SOC[h-1] # 
+                FCR_D_Up_action[h] = soc_last_h # 
+                FCR_D_Dn_action[h] = 1- soc_last_h # 
+                SOC[h] = soc_last_h
             end
         end
     end
