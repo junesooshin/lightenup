@@ -1,9 +1,10 @@
 #data import functions for learning model
 
-function data_import_Learning(Data_all, forecast_data, Data_index, Feature_Selection, scaling)
+function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling)
 
     N_train_flat = Data_index["N_train_flat"]
     D_train = Data_index["D_train"]
+    
     H  = Data_index["H"]
 
     #Features
@@ -16,6 +17,10 @@ function data_import_Learning(Data_all, forecast_data, Data_index, Feature_Selec
         train_df = Data_train
     end
     X = reshape(Matrix(train_df[:,Feature_Selection]), (length(H), length(D_train), F))
+
+    # Forgetting factor (D)
+    # Column names [1.0,0.9,0.96,0.98,0.985,0.99,0.995,0.999]
+    forgetting = forgettingFactor_data[D_train,"1.0"]
 
     # Forecast data
     D_forecast = floor(Int, size(forecast_data)[1]/24) #number of days for forecasts
@@ -86,7 +91,8 @@ function data_import_Learning(Data_all, forecast_data, Data_index, Feature_Selec
     "SOC_0" => SOC_0, "SOC_max" => SOC_max, "eta_dis" => eta_dis,"eta_ch" => eta_ch,
     "p_dis_max" => p_dis_max,"p_ch_max" => p_ch_max, "Cost_per_cycle" => Cost_per_cycle,
     scaling == true ? "scaled_train_parameters" => scaled_train_parameters : "scaled_train_parameters" => NaN,
-    scaling == true ? "scaled_forecast_parameters" => scaled_forecast_parameters : "scaled_forecast_parameters" => NaN
+    scaling == true ? "scaled_forecast_parameters" => scaled_forecast_parameters : "scaled_forecast_parameters" => NaN,
+    "forgettingFactor" => forgetting 
     )
     
     @info("Data import for learning model complete!")

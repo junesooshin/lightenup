@@ -203,6 +203,10 @@ function load_data(type)
         data_import_all = DataFrame(CSV.File(filepath))
         data_import = data_import_all[(24*2)+1:end, :] #Cut the first two days to match test data
         return data_import
+    elseif type == "forgettingFactor"
+        filepath = string(dir , "/Processed_data/forgettingFactor.csv")
+        data_import = DataFrame(CSV.File(filepath))
+        return data_import
     #Add extra_feature.csv
     end 
 end

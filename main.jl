@@ -81,10 +81,11 @@ function run_learn(m_set, moving_day, test_day_2023, scaling)
     forecast_day_2023 = moving_day + 1 
     processed_data = load_data("processed")
     forecast_data = load_data("forecast")
+    forgettingFactor_data = load_data("forgettingFactor")
     Data_index = Define_Training_and_Test_period(m_set, moving_day) #default d=0, AuctionType="D-2"
     # Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up","FD_act_down","FD_act_up"]
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
-    data_learn = data_import_Learning(processed_data, forecast_data, Data_index, Feature_Selection, scaling)
+    data_learn = data_import_Learning(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling)
 
     Architecture = "HA" # General or Hourly architecture of the coefficients
     learn_solution = Training_Learning_Model(data_learn, Data_index, Architecture)
@@ -164,7 +165,7 @@ end
 
 #Default parameters for 'run_all' function
 m_set_range = 1 #Set one value for one test case (within range 1:12)
-moving_day_range = 62 #(within range 0:87)
+moving_day_range = 1 #(within range 0:87)
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for learning)
 save_all = true #true/false (for saving individual results)
