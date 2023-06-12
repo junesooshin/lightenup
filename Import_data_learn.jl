@@ -4,6 +4,8 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
 
     N_train_flat = Data_index["N_train_flat"]
     D_train = Data_index["D_train"]
+    D_forecast = Data_index["D_forecast"]
+    N_forecast_flat = Data_index["N_forecast_flat"]
     
     H  = Data_index["H"]
 
@@ -23,13 +25,15 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     forgetting = forgettingFactor_data[D_train,"1.0"]
 
     # Forecast data
+    #print(D_forecast)
     D_forecast = floor(Int, size(forecast_data)[1]/24) #number of days for forecasts
+    #print(D_forecast)
     if scaling == true
         forecast_df, scaled_forecast_parameters = min_max_scaler(forecast_data, "test", scaled_train_parameters)
     elseif scaling == false
         forecast_df = forecast_data
     end
-    X_f = reshape(Matrix(forecast_df[:, Feature_Selection]), (length(H), D_forecast, F))
+    X_f = reshape(Matrix(forecast_df[:, Feature_Selection]), (length(H),D_forecast, F))
 
     n_features = size(X)[3]   # Number of features
     n_train_days = size(X)[2] # Total number of training days
@@ -60,6 +64,7 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     f_FD1_up = reshape(forecast_data[:,"FD1_up"], (n_hours, D_forecast) ) # 
     f_FD1_dn = reshape(forecast_data[:,"FD1_down"], (n_hours, D_forecast) ) # 
     f_DA = reshape(forecast_data[:,"Spot"], (n_hours, D_forecast) ) # 
+
 
     ##########################               PARAMETERS              ############################
  
@@ -98,6 +103,7 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     @info("Data import for learning model complete!")
     return Data
 end
+
 
 function min_max_scaler(df, dataset, training_parameters)
     #Add features if they need to be scaled!

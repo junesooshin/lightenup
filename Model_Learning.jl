@@ -199,7 +199,12 @@ function Training_Learning_Model(Data, Data_index, Architecture)
     ####################################################
     ############         Results         ###############
     ####################################################
-    learn_solution = Dict(           
+    learn_solution = Dict("b_FD2_up" => [value.(b_FD2_up[h,d]) for h in H, d in D],
+                        "b_FD2_dn" => [value.(b_FD2_dn[h,d]) for h in H, d in D],
+                        "b_DA_up" => [value.(b_DA_up[h,d]) for h in H, d in D],
+                        "b_DA_dn" => [value.(b_DA_dn[h,d]) for h in H, d in D],
+                        "b_FD1_up" => [value.(b_FD1_up[h,d]) for h in H, d in D],
+                        "b_FD1_dn" => [value.(b_FD1_dn[h,d]) for h in H, d in D],   
                         "p_FD2_up" => [value.(p_FD2_up[h,d]) for h in H, d in D],
                         "p_FD2_dn" => [value.(p_FD2_dn[h,d]) for h in H, d in D],
                         "p_DA_up" => [value.(p_DA_up[h,d]) for h in H, d in D],
@@ -246,6 +251,14 @@ function Create_bid_Learning(Data, Results_from_training, forecast_day_2023)
     q_FD1_up = Results_from_training["q_FD1_up"]
     q_FD1_dn = Results_from_training["q_FD1_dn"]
     
+    ############## The training bids: ##############
+    b_FD2_up_train = Results_from_training["b_FD2_up"]
+    b_FD2_dn_train = Results_from_training["b_FD2_dn"]
+    b_DA_up_train  = Results_from_training["b_DA_up"]
+    b_DA_dn_train  = Results_from_training["b_DA_dn"]
+    b_FD1_up_train = Results_from_training["b_FD1_up"]
+    b_FD1_dn_train = Results_from_training["b_FD1_dn"]
+
     ################ The Forecasted prices i.e. the bid prices ################
 
     f_DA = Data["f_DA"][:,forecast_day_2023]
@@ -288,6 +301,9 @@ function Create_bid_Learning(Data, Results_from_training, forecast_day_2023)
                        "b_FD2_up" => b_FD2_up, "b_FD2_dn" => b_FD2_dn,
                        "b_DA_up"  => b_DA_up , "b_DA_dn"  => b_DA_dn,
                        "b_FD1_up" => b_FD1_up, "b_FD1_dn" => b_FD1_dn,
+                       "b_FD2_up_train" => b_FD2_up_train, "b_FD2_dn_train" => b_FD2_dn_train,
+                       "b_DA_up_train" => b_DA_up_train, "b_DA_dn_train" => b_DA_dn_train,
+                       "b_FD1_up_train" => b_FD1_up_train, "b_FD1_dn_train" => b_FD1_dn_train,
                        "f_lambda_FD2_up" => f_lambda_FD2_up, "f_lambda_FD2_dn" => f_lambda_FD2_dn,
                        "f_lambda_FD1_up" => f_lambda_FD1_up, "f_lambda_FD1_dn" => f_lambda_FD1_dn,
                        "q_FD2_up" => q_FD2_up,
