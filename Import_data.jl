@@ -140,8 +140,8 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0)
     
     #######  FORECAST INDEXES  #######
 
-    start_forecast_idx = start_test_idx
-    end_forecast_idx = start_test_idx + 24
+    start_forecast_idx = d_update*24 + 2*24
+    end_forecast_idx = start_forecast_idx + 24
     Forecast_period_idx = index[(start_forecast_idx+1):end_forecast_idx]
 
     days_in_forecast = Int((end_forecast_idx-start_forecast_idx)/24)
@@ -156,7 +156,8 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0)
     D_forecast = collect(1:days_in_forecast)       # The total number of days to be iterated over
     H       = collect(1:24)                        # The total number of hours to be iterated over
 
-    Data_index = Dict(
+    Data_index = 
+        Dict(
         "N_train" => Training_periode_days_hours_idx,
         "N_train_flat" => Training_period_idx,
         "N_test" => Test_periode_days_hours_idx,
@@ -168,13 +169,14 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0)
         "D_forecast" => D_forecast,
         "H" => H,
         "d_train" => d_train,
-        "d_update" => d_update)
+        "d_update" => d_update
+        )
 
     return Data_index
 end
 
 #idx = Define_Training_and_Test_index(5,0)
-#print(idx["N_train"])
+#print(idx["D_forecast"])
 
 function Define_Training_and_Test_period(m_set, d = 0, AuctionType = "D-2")
 
