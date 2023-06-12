@@ -342,26 +342,33 @@ function Define_Training_and_Test_period(m_set, d = 0, AuctionType = "D-2")
     return Data_index
 end
 
-function load_data(type) 
+function load_data(file) 
 
     dir = dirname(@__FILE__)
     filepath = string(dir , "/Processed_data/real.csv")
 
     # Load files
-    if type == "processed"
-        filepath = string(dir , "/Processed_data/real.csv")
+    if file == "processed"
+        filepath = string(dir , "/Processed_data/" , "real.csv")
         data_import = DataFrame(CSV.File(filepath)) 
         return data_import
-    elseif type == "forecast"
-        filepath = string(dir , "/Processed_data/forecast.csv")
+
+    elseif file == "features"
+        filepath = string(dir , "/Processed_data/features.csv")
+        data_import = DataFrame(CSV.File(filepath)) 
+        return data_import
+
+    elseif occursin.("forecast",file) # check if forecast is in file
+        filepath = string(dir , "/Processed_data/", file , ".csv")
         data_import_all = DataFrame(CSV.File(filepath))
         data_import = data_import_all[(24*2)+1:end, :] #Cut the first two days to match test data
         return data_import
-    elseif type == "forgettingFactor"
-        filepath = string(dir , "/Processed_data/forgettingFactor.csv")
+
+    elseif file == "forgettingFactor"
+        filepath = string(dir , "/Processed_data/", "forgettingFactor.csv")
         data_import = DataFrame(CSV.File(filepath))
         return data_import
-    #Add extra_feature.csv
+    
     end 
 end
 
