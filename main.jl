@@ -124,7 +124,7 @@ function run_all(d_train_set_range, moving_day_range, out_of_sample, scaling, sa
                 print(test_day_2023_range)
             end
             for test_day_2023 in test_day_2023_range
-                id = "d$(d_train_set)_d_upd$(moving_day)_t$(test_day_2023+moving_day)"
+                id = "d$(d_train_set)_upd$(moving_day)_t$(test_day_2023+moving_day)"
                 @info("Started running id: $(id)")
 
                 result_rule = run_rule(d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023)
@@ -166,7 +166,7 @@ end
 
 #Default parameters for 'run_all' function
 d_train_set_range = 5 #Set one value for one test case 
-moving_day_range = 0 #(within range 0:87)
+moving_day_range = 0:87 #(within range 0:87)
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for learning)
 save_all = true #true/false (for saving individual results)
