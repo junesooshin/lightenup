@@ -197,10 +197,10 @@ function create_bid_stochastic(Data, sto_solution)
     ################ The Forecasted prices i.e. the bid prices ################
 
     f_DA = Data["f_Spot_price"] #Already selected for forecast day
-    f_lambda_FD2_up = Data["f_FD2_up"] 
-    f_lambda_FD2_dn = Data["f_FD2_dn"]
-    f_lambda_FD1_up = Data["f_FD1_up"]
-    f_lambda_FD1_dn = Data["f_FD1_dn"]
+    f_lambda_FD2_up = Data["f_FD2_up"][:,1] #Flatten array
+    f_lambda_FD2_dn = Data["f_FD2_dn"][:,1] #Flatten array
+    f_lambda_FD1_up = Data["f_FD1_up"][:,1] #Flatten array
+    f_lambda_FD1_dn = Data["f_FD1_dn"][:,1] #Flatten array
 
     #Calculate expected revenue
     G_FD2_t = f_lambda_FD2_up.*p_FD2_up .+ f_lambda_FD2_dn.*p_FD2_dn 
@@ -210,7 +210,7 @@ function create_bid_stochastic(Data, sto_solution)
     obj_t = G_FD2_t + G_FD1_t + G_DA_t - C_Deg_t
     
     Bid_Results = Dict(
-                    "obj_t" => obj_t,
+                    "obj_t" => obj_t[:,1], #Flatten array
                     "G_FD2" => sto_solution["G_FD2"],
                     "G_DA" => sto_solution["G_DA"],
                     "G_FD1"=> sto_solution["G_FD1"],

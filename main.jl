@@ -105,17 +105,17 @@ function run_all(d_train_set_range, moving_day_range, out_of_sample, scaling, sa
     #Fixed parameters
     Threshold_Max_coef = 0.9
     Threshold_Min_coef = 1.1
-    best_scenario_combinations = [2  2  3  3  3  4  5  5  5  5  4  5;      
-                                  3  5  5  5  5  5  6  6  6  6  8  8;      
-                                  5  6  6  8 10  9  7  8  9 10 10  9] 
+    # best_scenario_combinations = [2  2  3  3  3  4  5  5  5  5  4  5;      
+    #                               3  5  5  5  5  5  6  6  6  6  8  8;      
+    #                               5  6  6  8 10  9  7  8  9 10 10  9] 
 
     RT_revenue = Dict()
     Exp_revenue = Dict()
     #Run models
     for d_train_set in d_train_set_range
-        size_W1 = 5 
-        size_W2 = 5 
-        size_W3 = 5 
+        size_W1 = d_train_set 
+        size_W2 = d_train_set
+        size_W3 = d_train_set
         for moving_day in moving_day_range
             if out_of_sample == false
                 test_day_2023_range = 1
@@ -129,23 +129,23 @@ function run_all(d_train_set_range, moving_day_range, out_of_sample, scaling, sa
 
                 result_rule = run_rule(d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023)
                 result_det = run_det(d_train_set, moving_day, test_day_2023)
-                #result_sto = run_sto(d_train_set, moving_day, size_W1, size_W2, size_W3, test_day_2023)
+                result_sto = run_sto(d_train_set, moving_day, size_W1, size_W2, size_W3, test_day_2023)
                 result_learn = run_learn(d_train_set, moving_day, test_day_2023, scaling)
                 
                 #Store RT results for all models
                 RT_revenue[id] = Dict("rule" => result_rule["RT"]["revenue"],
                                       "det" => result_det["RT"]["revenue"],
-                                      #"sto" => result_sto["RT"]["revenue"],
+                                      "sto" => result_sto["RT"]["revenue"],
                                       "learn" => result_learn["RT"]["revenue"])
                 Exp_revenue[id] = Dict("rule" => sum(result_rule["Bid"]["obj_t"]),
                                        "det" => sum(result_det["Bid"]["obj_t"]),
-                                       #"sto" => sum(result_sto["Bid"]["obj_t"]),
+                                       "sto" => sum(result_sto["Bid"]["obj_t"]),
                                        "learn" => sum(result_learn["Bid"]["obj_t"]))
                 #Save all solutions
                 if save_all == true
                     save_dict(result_rule, "rule_$(id)")
                     save_dict(result_det, "det_$(id)")
-                    #save_dict(result_sto, "sto_$(id)")
+                    save_dict(result_sto, "sto_$(id)")
                     save_dict(result_learn, "learn_$(id)")
                 end
                 @info("Finished running id: $(id)")
@@ -166,11 +166,10 @@ end
 
 #Default parameters for 'run_all' function
 d_train_set_range = 5 #Set one value for one test case 
-moving_day_range = 1:87 #(within range 0:87)
+moving_day_range = 0 #(within range 0:87)
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for learning)
 save_all = true #true/false (for saving individual results)
-
 
 RT_revenue, Exp_revenue = run_all(d_train_set_range, moving_day_range, out_of_sample, scaling, save_all)
 

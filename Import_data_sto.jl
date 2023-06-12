@@ -23,20 +23,27 @@ function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, 
     FD1_up_percentage = reshape(df_train[:,"FD1_up_percentage"], (24, no_days))
     FD2_up_percentage = reshape(df_train[:,"FD2_up_percentage"], (24, no_days))
 
-    #Get forecast data and reshape
-    D_forecast = floor(Int, size(forecast_data)[1]/24) #number of days for forecasts
-    f_lambda_FD1_dn = reshape(forecast_data[:, "FD1_down"], (24, D_forecast))
-    f_lambda_FD2_dn = reshape(forecast_data[:, "FD2_down"], (24, D_forecast))
-    f_lambda_FD1_up   = reshape(forecast_data[:, "FD1_up"], (24, D_forecast))
-    f_lambda_FD2_up   = reshape(forecast_data[:, "FD2_up"], (24, D_forecast))
-    f_DA = reshape(forecast_data[:, "Spot"], (24, D_forecast))
+    # #Get forecast data and reshape
+    # D_forecast = floor(Int, size(forecast_data)[1]/24) #number of days for forecasts
+    # f_lambda_FD1_dn = reshape(forecast_data[:, "FD1_down"], (24, D_forecast))
+    # f_lambda_FD2_dn = reshape(forecast_data[:, "FD2_down"], (24, D_forecast))
+    # f_lambda_FD1_up   = reshape(forecast_data[:, "FD1_up"], (24, D_forecast))
+    # f_lambda_FD2_up   = reshape(forecast_data[:, "FD2_up"], (24, D_forecast))
+    # f_DA = reshape(forecast_data[:, "Spot"], (24, D_forecast))
     
-    #Extract volume weighted average values of the test day
-    vol_avg_price_FD1_down = f_lambda_FD1_dn[:, forecast_day_2023]
-    vol_avg_price_FD2_down = f_lambda_FD2_dn[:, forecast_day_2023]
-    vol_avg_price_FD1_up = f_lambda_FD1_up[:, forecast_day_2023]
-    vol_avg_price_FD2_up = f_lambda_FD2_up[:, forecast_day_2023]
-    f_Spot_price = f_DA[:, forecast_day_2023]
+    # #Extract volume weighted average values of the test day
+    # vol_avg_price_FD1_down = f_lambda_FD1_dn[:, forecast_day_2023]
+    # vol_avg_price_FD2_down = f_lambda_FD2_dn[:, forecast_day_2023]
+    # vol_avg_price_FD1_up = f_lambda_FD1_up[:, forecast_day_2023]
+    # vol_avg_price_FD2_up = f_lambda_FD2_up[:, forecast_day_2023]
+    # f_Spot_price = f_DA[:, forecast_day_2023]
+
+    # Forecast price comes from the mean of the scenarios
+    vol_avg_price_FD1_down = mean(FD1_down_train, dims=2)
+    vol_avg_price_FD2_down = mean(FD2_down_train, dims=2)
+    vol_avg_price_FD1_up = mean(FD1_up_train, dims=2)
+    vol_avg_price_FD2_up = mean(FD2_up_train, dims=2)
+    f_Spot_price = mean(spot_train, dims=2)
 
     FD1_down_accept_price = construct_acceptance(FD1_down_train, vol_avg_price_FD1_down)
     FD2_down_accept_price = construct_acceptance(FD2_down_train, vol_avg_price_FD2_down)
@@ -63,48 +70,48 @@ function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, 
                 # Saving all the accepted mean values (not the best way)
         
                 # All the training data
-                "FD2_up_train_all" => FD2_up_train,  
-                "FD2_up_accept_all" => FD2_up_accept,
-                "FD2_dn_train_all" => FD2_down_train, 
-                "FD2_dn_accept_all" => FD2_down_accept,
-                "spot_train_all" => spot_train,   
-                "FD1_up_train_all" => FD1_up_train,
-                "FD1_up_accept_all" => FD1_up_accept,
-                "FD1_dn_train_all" => FD1_down_train,
-                "FD1_dn_accept_all" => FD1_down_accept,
+                # "FD2_up_train_all" => FD2_up_train,  
+                # "FD2_up_accept_all" => FD2_up_accept,
+                # "FD2_dn_train_all" => FD2_down_train, 
+                # "FD2_dn_accept_all" => FD2_down_accept,
+                # "spot_train_all" => spot_train,   
+                # "FD1_up_train_all" => FD1_up_train,
+                # "FD1_up_accept_all" => FD1_up_accept,
+                # "FD1_dn_train_all" => FD1_down_train,
+                # "FD1_dn_accept_all" => FD1_down_accept,
 
-                # The training data which is being provided to the model
-                "FD2_up_train" => FD2_up_train[:,1:W1], # To be plotted
-                "FD2_dn_train" => FD2_down_train[:,1:W1],
-                "FD2_up_accept" => FD2_up_accept[:,1:W1],
-                "FD2_dn_accept" => FD2_down_accept[:,1:W1],
-                "spot_train" => spot_train[:,1:W1*W2],
-                "FD1_up_train" => FD1_up_train[:,1:W1*W2*W3],
-                "FD1_dn_train" => FD1_down_train[:,1:W1*W2*W3],
-                "FD1_up_accept" => FD1_up_accept[:,1:W1*W2*W3],
-                "FD1_dn_accept" => FD1_down_accept[:,1:W1*W2*W3],
-                "FD_act_up_train" => FD_act_up_train[:,1:W1*W2*W3],
-                "FD_act_dn_train" => FD_act_down_train[:,1:W1*W2*W3],
+                
+                # "FD2_up_train" => FD2_up_train[:,1:W1], # To be plotted
+                # "FD2_dn_train" => FD2_down_train[:,1:W1],
+                # "FD2_up_accept" => FD2_up_accept[:,1:W1],
+                # "FD2_dn_accept" => FD2_down_accept[:,1:W1],
+                # "spot_train" => spot_train[:,1:W1*W2],
+                # "FD1_up_train" => FD1_up_train[:,1:W1*W2*W3],
+                # "FD1_dn_train" => FD1_down_train[:,1:W1*W2*W3],
+                # "FD1_up_accept" => FD1_up_accept[:,1:W1*W2*W3],
+                # "FD1_dn_accept" => FD1_down_accept[:,1:W1*W2*W3],
+                # "FD_act_up_train" => FD_act_up_train[:,1:W1*W2*W3],
+                # "FD_act_dn_train" => FD_act_down_train[:,1:W1*W2*W3],
 
-                # Forecasted prices
+                # Forecasted prices 
                 "f_FD1_dn" => vol_avg_price_FD1_down,
                 "f_FD2_dn" => vol_avg_price_FD2_down,
                 "f_FD1_up" => vol_avg_price_FD1_up,
                 "f_FD2_up" => vol_avg_price_FD2_up,
                 "f_Spot_price" => f_Spot_price,
 
-
-                "f_FD2_up_tw" => reshape(FD2_up_train[:,1:W1], (24,W1)),
-                "f_FD2_dn_tw" => reshape(FD2_down_train[:,1:W1], (24,W1)), 
-                "f_FD2_y_up_tw" => reshape(FD2_up_accept[:,1:W1], (24,W1)), 
-                "f_FD2_y_dn_tw" => reshape(FD2_down_accept[:,1:W1], (24,W1)), 
-                "f_DA_tw" => reshape(spot_train[:,1:W1*W2], (24,W1,W2)),
-                "f_FD1_up_tw" => reshape(FD1_up_train[:,1:W1*W2*W3], (24,W1,W2,W3)), 
-                "f_FD1_dn_tw" => reshape(FD1_down_train[:,1:W1*W2*W3], (24,W1,W2,W3)),
-                "f_a_up_tw" => reshape(FD_act_up_train[:,1:W1*W2*W3], (24,W1,W2,W3)), 
-                "f_a_dn_tw" => reshape(FD_act_down_train[:,1:W1*W2*W3], (24,W1,W2,W3)), 
-                "f_FD1_y_up_tw" => reshape(FD1_up_accept[:,1:W1*W2*W3], (24,W1,W2,W3)), 
-                "f_FD1_y_dn_tw" => reshape(FD1_down_accept[:,1:W1*W2*W3], (24,W1,W2,W3)),
+                # The training data which is being provided to the model
+                "f_FD2_up_tw" => FD2_up_train, 
+                "f_FD2_dn_tw" => FD2_down_train,
+                "f_FD2_y_up_tw" => FD2_up_accept, 
+                "f_FD2_y_dn_tw" => FD2_down_accept,
+                "f_DA_tw" => reshape(repeat(spot_train, no_days), (24,W1,W2)),
+                "f_FD1_up_tw" => reshape(repeat(FD1_up_train, no_days*no_days), (24,W1,W2,W3)), 
+                "f_FD1_dn_tw" => reshape(repeat(FD1_down_train, no_days*no_days), (24,W1,W2,W3)),
+                "f_a_up_tw" => reshape(repeat(FD_act_up_train, no_days*no_days), (24,W1,W2,W3)), 
+                "f_a_dn_tw" => reshape(repeat(FD_act_down_train, no_days*no_days), (24,W1,W2,W3)), 
+                "f_FD1_y_up_tw" => reshape(repeat(FD1_up_accept, no_days*no_days), (24,W1,W2,W3)), 
+                "f_FD1_y_dn_tw" => reshape(repeat(FD1_down_accept, no_days*no_days), (24,W1,W2,W3)),
                 "SOC_0" => Data_Battery["SOC_0"], 
                 "SOC_max" => Data_Battery["SOC_max"], 
                 "eta_dis" => Data_Battery["eta_dis"],

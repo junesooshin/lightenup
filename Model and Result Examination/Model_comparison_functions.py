@@ -464,23 +464,28 @@ def plot_training_price(with_acceptance, bid_result, model, color, save):
     fig, ax2 = plt.subplots(figsize=(7,5))
 
     x = np.arange(1,25)
-    if 'Det' in model or 'Rule' in model:
+    if 'Rule' in model:
+        ax2.plot(x, bid_result['f_lambda_FD2_up'], label='f_FD2_up', marker='.', color=color['FD2_up'])
+        ax2.plot(x, bid_result['f_lambda_FD2_dn'], label='f_FD2_dn', marker='.', color=color['FD2_dn'])
+        ax2.plot(x, bid_result['f_DA_t'], label='f_DA', marker='.', color=color['DA_up']) #Expected DA price
+        ax2.plot(x, bid_result['Threshold_Max'], linestyle='--', color='grey')
+        ax2.plot(x, bid_result['Threshold_Min'], linestyle='--', color='grey')
+        ax2.set_ylabel('Price used for training [EUR/MW]', fontsize=12)
+
+    elif 'Det' in model:
+        ax2.plot(x, bid_result['f_DA_t'], label='f_DA', marker='.', color=color['DA_up']) #Expected DA price
         if with_acceptance == True:
             ax2.plot(x, bid_result['f_lambda_FD2_up']*bid_result['f_FD2_y_up_t'], label='f_FD2_up', marker='.', color=color['FD2_up'])
             ax2.plot(x, bid_result['f_lambda_FD2_dn']*bid_result['f_FD2_y_dn_t'], label='f_FD2_dn', marker='.', color=color['FD2_dn'])
-            if 'Det' in model:
-                ax2.plot(x, bid_result['f_lambda_FD1_up']*bid_result['f_FD1_y_up_t'], label='f_FD1_up', marker='.', color=color['FD1_up'])
-                ax2.plot(x, bid_result['f_lambda_FD1_dn']*bid_result['f_FD1_y_dn_t'], label='f_FD1_dn', marker='.', color=color['FD1_dn'])
+            ax2.plot(x, bid_result['f_lambda_FD1_up']*bid_result['f_FD1_y_up_t'], label='f_FD1_up', marker='.', color=color['FD1_up'])
+            ax2.plot(x, bid_result['f_lambda_FD1_dn']*bid_result['f_FD1_y_dn_t'], label='f_FD1_dn', marker='.', color=color['FD1_dn'])
+            ax2.set_ylabel('Price used for training with acceptance [EUR/MW]', fontsize=12)
         elif with_acceptance == False:
             ax2.plot(x, bid_result['f_lambda_FD2_up'], label='f_FD2_up', marker='.', color=color['FD2_up'])
             ax2.plot(x, bid_result['f_lambda_FD2_dn'], label='f_FD2_dn', marker='.', color=color['FD2_dn'])
-            if 'Det' in model:
-                ax2.plot(x, bid_result['f_lambda_FD1_up'], label='f_FD1_up', marker='.', color=color['FD1_up'])
-                ax2.plot(x, bid_result['f_lambda_FD1_dn'], label='f_FD1_dn', marker='.', color=color['FD1_dn'])
-        ax2.plot(x, bid_result['f_DA_t'], label='f_DA', marker='.', color=color['DA_up']) #Expected DA price
-        if 'Rule' in model:
-            ax2.plot(x, bid_result['Threshold_Max'], linestyle='--', color='grey')
-            ax2.plot(x, bid_result['Threshold_Min'], linestyle='--', color='grey')
+            ax2.plot(x, bid_result['f_lambda_FD1_up'], label='f_FD1_up', marker='.', color=color['FD1_up'])
+            ax2.plot(x, bid_result['f_lambda_FD1_dn'], label='f_FD1_dn', marker='.', color=color['FD1_dn'])
+            ax2.set_ylabel('Price used for training [EUR/MW]', fontsize=12)            
 
     elif 'Learn' in model: # This only plots training data for now, the bid price is equal to the forecast price
         X_train_spot = np.array(bid_result["X"])[0,:,:].T
@@ -494,8 +499,11 @@ def plot_training_price(with_acceptance, bid_result, model, color, save):
         ax2.plot(x, X_train_FD1_up.mean(axis=1), label='X_FD1_up', marker='.', color=color['FD1_up'])
         ax2.plot(x, X_train_FD1_dn.mean(axis=1), label='X_FD1_dn', marker='.', color=color['FD1_dn'])
         ax2.plot(x, X_train_spot.mean(axis=1), label='X_spot', marker='.', color=color['DA_up'])
+        ax2.set_ylabel('Price used for training [EUR/MW]', fontsize=12)
 
     elif 'Sto' in model:
+        W_size = bid_result['f_DA_tw_input'].shape[0]
+
         FD2_up_mean = np.mean(bid_result['f_FD2_up_tw_input'], axis=0)
         FD2_up_max = np.max(bid_result['f_FD2_up_tw_input'], axis=0)
         FD2_up_min = np.min(bid_result['f_FD2_up_tw_input'], axis=0)
@@ -504,17 +512,17 @@ def plot_training_price(with_acceptance, bid_result, model, color, save):
         FD2_dn_max = np.max(bid_result['f_FD2_dn_tw_input'], axis=0)
         FD2_dn_min = np.min(bid_result['f_FD2_dn_tw_input'], axis=0)
 
-        DA_mean = np.mean(np.reshape(bid_result['f_DA_tw_input'], (3*2,24)), axis=0)
-        DA_max = np.max(np.reshape(bid_result['f_DA_tw_input'], (3*2,24)), axis=0)
-        DA_min = np.min(np.reshape(bid_result['f_DA_tw_input'], (3*2,24)), axis=0)
+        DA_mean = np.mean(np.reshape(bid_result['f_DA_tw_input'], (W_size*W_size,24)), axis=0)
+        DA_max = np.max(np.reshape(bid_result['f_DA_tw_input'], (W_size*W_size,24)), axis=0)
+        DA_min = np.min(np.reshape(bid_result['f_DA_tw_input'], (W_size*W_size,24)), axis=0)
 
-        FD1_up_mean = np.mean(np.reshape(bid_result['f_FD1_up_tw_input'], (5*3*2,24)), axis=0)
-        FD1_up_max = np.max(np.reshape(bid_result['f_FD1_up_tw_input'], (5*3*2,24)), axis=0)
-        FD1_up_min = np.min(np.reshape(bid_result['f_FD1_up_tw_input'], (5*3*2,24)), axis=0)
+        FD1_up_mean = np.mean(np.reshape(bid_result['f_FD1_up_tw_input'], (W_size*W_size*W_size,24)), axis=0)
+        FD1_up_max = np.max(np.reshape(bid_result['f_FD1_up_tw_input'], (W_size*W_size*W_size,24)), axis=0)
+        FD1_up_min = np.min(np.reshape(bid_result['f_FD1_up_tw_input'], (W_size*W_size*W_size,24)), axis=0)
 
-        FD1_dn_mean = np.mean(np.reshape(bid_result['f_FD1_dn_tw_input'], (5*3*2,24)), axis=0)
-        FD1_dn_max = np.max(np.reshape(bid_result['f_FD1_dn_tw_input'], (5*3*2,24)), axis=0)
-        FD1_dn_min = np.min(np.reshape(bid_result['f_FD1_dn_tw_input'], (5*3*2,24)), axis=0)
+        FD1_dn_mean = np.mean(np.reshape(bid_result['f_FD1_dn_tw_input'], (W_size*W_size*W_size,24)), axis=0)
+        FD1_dn_max = np.max(np.reshape(bid_result['f_FD1_dn_tw_input'], (W_size*W_size*W_size,24)), axis=0)
+        FD1_dn_min = np.min(np.reshape(bid_result['f_FD1_dn_tw_input'], (W_size*W_size*W_size,24)), axis=0)
 
         FD2_up_accept_mean = np.mean(bid_result['f_FD2_y_up_tw_input'], axis=0)
         FD2_up_accept_max = np.max(bid_result['f_FD2_y_up_tw_input'], axis=0)
@@ -524,13 +532,13 @@ def plot_training_price(with_acceptance, bid_result, model, color, save):
         FD2_dn_accept_max = np.max(bid_result['f_FD2_y_dn_tw_input'], axis=0)
         FD2_dn_accept_min = np.min(bid_result['f_FD2_y_dn_tw_input'], axis=0)
 
-        FD1_up_accept_mean = np.mean(np.reshape(bid_result['f_FD1_y_up_tw_input'], (5*3*2,24)), axis=0)
-        FD1_up_accept_max = np.max(np.reshape(bid_result['f_FD1_y_up_tw_input'], (5*3*2,24)), axis=0)
-        FD1_up_accept_min = np.min(np.reshape(bid_result['f_FD1_y_up_tw_input'], (5*3*2,24)), axis=0)
+        FD1_up_accept_mean = np.mean(np.reshape(bid_result['f_FD1_y_up_tw_input'], (W_size*W_size*W_size,24)), axis=0)
+        FD1_up_accept_max = np.max(np.reshape(bid_result['f_FD1_y_up_tw_input'], (W_size*W_size*W_size,24)), axis=0)
+        FD1_up_accept_min = np.min(np.reshape(bid_result['f_FD1_y_up_tw_input'], (W_size*W_size*W_size,24)), axis=0)
 
-        FD1_dn_accept_mean = np.mean(np.reshape(bid_result['f_FD1_y_dn_tw_input'], (5*3*2,24)), axis=0)
-        FD1_dn_accept_max = np.max(np.reshape(bid_result['f_FD1_y_dn_tw_input'], (5*3*2,24)), axis=0)
-        FD1_dn_accept_min = np.min(np.reshape(bid_result['f_FD1_y_dn_tw_input'], (5*3*2,24)), axis=0)
+        FD1_dn_accept_mean = np.mean(np.reshape(bid_result['f_FD1_y_dn_tw_input'], (W_size*W_size*W_size,24)), axis=0)
+        FD1_dn_accept_max = np.max(np.reshape(bid_result['f_FD1_y_dn_tw_input'], (W_size*W_size*W_size,24)), axis=0)
+        FD1_dn_accept_min = np.min(np.reshape(bid_result['f_FD1_y_dn_tw_input'], (W_size*W_size*W_size,24)), axis=0)
 
         if with_acceptance == True:
             ax2.plot(x, FD2_dn_mean*FD2_dn_accept_mean, label='Mean D-2 dn',color=color['FD2_dn'], marker='.')
@@ -543,6 +551,7 @@ def plot_training_price(with_acceptance, bid_result, model, color, save):
             ax2.fill_between(x, FD1_up_min*FD1_up_accept_min, FD1_up_max*FD1_up_accept_max, alpha=0.2,color=color['FD1_up'])
             ax2.plot(x, DA_mean, label='Mean DA',color=color['DA_up'], marker='.')
             ax2.fill_between(x, DA_min, DA_max, alpha=0.2,color=color['DA_up'])
+            ax2.set_ylabel('Price used for training with acceptance [EUR/MW]', fontsize=12)
         elif with_acceptance == False:    
             ax2.plot(x, FD2_dn_mean, label='Mean D-2 dn',color=color['FD2_dn'], marker='.')
             ax2.fill_between(x, FD2_dn_min, FD2_dn_max, alpha=0.2,color=color['FD2_dn'])
@@ -554,11 +563,8 @@ def plot_training_price(with_acceptance, bid_result, model, color, save):
             ax2.fill_between(x, FD1_up_min, FD1_up_max, alpha=0.2,color=color['FD1_up'])
             ax2.plot(x, DA_mean, label='Mean DA',color=color['DA_up'], marker='.')
             ax2.fill_between(x, DA_min, DA_max, alpha=0.2,color=color['DA_up'])
+            ax2.set_ylabel('Price used for training [EUR/MW]', fontsize=12)
 
-    if with_acceptance == True:
-        ax2.set_ylabel('Price used for training with acceptance [EUR/MW]', fontsize=12)
-    elif with_acceptance == False:
-        ax2.set_ylabel('Price used for training [EUR/MW]', fontsize=12)
     ax2.set_xlabel('Hours', fontsize=12)
     ax2.set_xticks([1, 6, 12, 18, 24])
     ax2.legend(loc='upper left', bbox_to_anchor=(0.15, -0.15), ncol=3)
@@ -821,7 +827,7 @@ def save_plots(current_directory, choose_id, save, model, with_acceptance, rev_p
     #Print summary
     print('Test case: ', choose_id)
     result_summary = [["RT", results['Rule']['RT']['revenue'], results['Det']['RT']['revenue'], results['Sto']['RT']['revenue'], results['Learn']['RT']['revenue']],
-                      ["Expected", sum(results['Rule']['Bid']['obj_t']), sum(results['Det']['Bid']['obj_t']), sum(results['Sto']['Bid']['obj_t']), sum(results['Learn']['Bid']['obj_t'].flatten())]]
+                      ["Expected", sum(results['Rule']['Bid']['obj_t']), sum(results['Det']['Bid']['obj_t']), sum(results['Sto']['Bid']['obj_t'].flatten()), sum(results['Learn']['Bid']['obj_t'].flatten())]]
     headers = ["Rule", "Deterministic", "Stochastic", "Learning"]
     table = tabulate(result_summary, headers, tablefmt="grid")
     print(table)
@@ -854,3 +860,95 @@ def view_plots(model, rev_plot):
     ax1.imshow(image)
     ax1.axis("off")
     plt.show()
+
+#Heat map of hourly coefficients
+def plot_coefficients_heatmap(learn_bid, save):
+    # Plot coefficients
+    x = np.arange(1,25)
+    Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up", "1"]
+    q_FD2_up = learn_bid["q_FD2_up"]
+    q_FD2_dn = learn_bid["q_FD2_dn"]
+    q_FD1_up = learn_bid["q_FD1_up"]
+    q_FD1_dn = learn_bid["q_FD1_dn"]
+    q_DA_up = learn_bid["q_DA_up"]
+    q_DA_dn = learn_bid["q_DA_dn"]
+
+
+    fig, ax = plt.subplots(6,1,figsize=(20,20))
+
+    im = ax[0].imshow(q_FD2_up)
+    ax[0].set_xticks(np.arange(len(x)), labels=x)
+    ax[0].set_yticks(np.arange(len(Feature_Selection)), labels=Feature_Selection)
+    plt.setp(ax[0].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(Feature_Selection)):
+        for j in range(len(x)):
+            text = ax[0].text(j, i, q_FD2_up[i, j].round(0),
+                        ha="center", va="center", color="w")
+    ax[0].set_title("q_FD2_up")
+    fig.tight_layout()
+
+    im = ax[1].imshow(q_FD2_dn)
+    ax[1].set_xticks(np.arange(len(x)), labels=x)
+    ax[1].set_yticks(np.arange(len(Feature_Selection)), labels=Feature_Selection)
+    plt.setp(ax[1].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(Feature_Selection)):
+        for j in range(len(x)):
+            text = ax[1].text(j, i, q_FD2_dn[i, j].round(0),
+                        ha="center", va="center", color="w")
+    ax[1].set_title("q_FD2_dn")
+    fig.tight_layout()
+
+    im = ax[2].imshow(q_FD1_up)
+    ax[2].set_xticks(np.arange(len(x)), labels=x)
+    ax[2].set_yticks(np.arange(len(Feature_Selection)), labels=Feature_Selection)
+    plt.setp(ax[2].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(Feature_Selection)):
+        for j in range(len(x)):
+            text = ax[2].text(j, i, q_FD1_up[i, j].round(0),
+                        ha="center", va="center", color="w")
+    ax[2].set_title("q_FD1_up")
+    fig.tight_layout()
+
+    im = ax[3].imshow(q_FD1_dn)
+    ax[3].set_xticks(np.arange(len(x)), labels=x)
+    ax[3].set_yticks(np.arange(len(Feature_Selection)), labels=Feature_Selection)
+    plt.setp(ax[3].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(Feature_Selection)):
+        for j in range(len(x)):
+            text = ax[3].text(j, i, q_FD1_dn[i, j].round(0),
+                        ha="center", va="center", color="w")
+    ax[3].set_title("q_FD1_dn")
+    fig.tight_layout()
+
+    im = ax[4].imshow(q_DA_up)
+    ax[4].set_xticks(np.arange(len(x)), labels=x)
+    ax[4].set_yticks(np.arange(len(Feature_Selection)), labels=Feature_Selection)
+    plt.setp(ax[4].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(Feature_Selection)):
+        for j in range(len(x)):
+            text = ax[4].text(j, i, q_DA_up[i, j].round(0),
+                        ha="center", va="center", color="w")
+    ax[4].set_title("q_DA_up")
+    fig.tight_layout()
+
+    im = ax[5].imshow(q_DA_dn)
+    ax[5].set_xticks(np.arange(len(x)), labels=x)
+    ax[5].set_yticks(np.arange(len(Feature_Selection)), labels=Feature_Selection)
+    plt.setp(ax[5].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(Feature_Selection)):
+        for j in range(len(x)):
+            text = ax[5].text(j, i, q_DA_dn[i, j].round(0),
+                        ha="center", va="center", color="w")
+    ax[5].set_title("q_DA_dn")
+    fig.tight_layout()
+
+    if save == True:
+        plt.savefig('Result_plots/coefficients_heatmap.png', bbox_inches='tight')
+
+    # plt.show()
