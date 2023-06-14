@@ -121,9 +121,7 @@ function Training_Learning_Model(Data, Data_index, Architecture)
     ############        Objective        ###############
     ####################################################
 
-    # @objective(Model_Learning, Max, sum( (G_FD1[h,d] + G_FD2[h,d] + G_DA[h,d] - C_Deg[h,d]) for h in H, d in D))
     @objective(Model_Learning, Max, sum((G_FD1[h,d] + G_FD2[h,d] + G_DA[h,d] - C_Deg[h,d]) for h in H, d in D))
-
 
     @constraint(Model_Learning, FD1_slack_obj[h in H, d in D], G_FD1[h,d] == lambda_FD1_up[ h,d ]*p_FD1_up[h,d] + lambda_FD1_dn[ h,d ]*p_FD1_dn[h,d]) # Constraint to set G_FD
     @constraint(Model_Learning, FD2_slack_obj[h in H, d in D], G_FD2[h,d] == lambda_FD2_up[ h,d ]*p_FD2_up[h,d] + lambda_FD2_dn[ h,d ]*p_FD2_dn[h,d]) # Constraint to set G_FD

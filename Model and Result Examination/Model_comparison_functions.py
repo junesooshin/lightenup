@@ -232,8 +232,8 @@ def plot_Accepted_Bids2(df_input_FD2,df_input_DA,df_input_FD1,df_input_RT,fignam
 
 
 def Create_Array_from_Rev(df_Exp_rev,df_RT_rev):
-    # Initialize a numpy array of size (month, days, models, result) with empty values
-    Array = np.empty((12, 88, 4, 2))
+    # Initialize a numpy array of size (number of different forecast accuracies,number of different train sizes, test days, models, result) with empty values
+    Array = np.empty((6, 1, 88, 4, 2))
 
     for col in df_Exp_rev.columns:
         
@@ -245,28 +245,30 @@ def Create_Array_from_Rev(df_Exp_rev,df_RT_rev):
 
         # Extract the 'm', 'd', and 't' values from column name
         parts = col.split('_')
-        m = int(parts[0][1:])
-        d = int(parts[1][1:])
-        t = int(parts[2][1:])
+
+        f = int(parts[0][1:])
+        m = 1 # int(parts[0][1:])
+        d = int(parts[2][3:])
+        t = int(parts[3][1:])
 
 
 
-        Array[(m-1),(d-1),0,0] = df_Exp_rev[col]['rule']
-        Array[(m-1),(d-1),1,0] = df_Exp_rev[col]['det']
-        Array[(m-1),(d-1),2,0] = df_Exp_rev[col]['sto']
-        Array[(m-1),(d-1),3,0] = df_Exp_rev[col]['learn']
+        Array[(f-1),(m-1),(d-1),0,0] = df_Exp_rev[col]['rule']
+        Array[(f-1),(m-1),(d-1),1,0] = df_Exp_rev[col]['det']
+        Array[(f-1),(m-1),(d-1),2,0] = df_Exp_rev[col]['sto']
+        Array[(f-1),(m-1),(d-1),3,0] = df_Exp_rev[col]['learn']
 
-        Array[(m-1),(d-1),0,1] = df_RT_rev[col]['rule']
-        Array[(m-1),(d-1),1,1] = df_RT_rev[col]['det']
-        Array[(m-1),(d-1),2,1] = df_RT_rev[col]['sto']
-        Array[(m-1),(d-1),3,1] = df_RT_rev[col]['learn']
+        Array[(f-1),(m-1),(d-1),0,1] = df_RT_rev[col]['rule']
+        Array[(f-1),(m-1),(d-1),1,1] = df_RT_rev[col]['det']
+        Array[(f-1),(m-1),(d-1),2,1] = df_RT_rev[col]['sto']
+        Array[(f-1),(m-1),(d-1),3,1] = df_RT_rev[col]['learn']
         
     return Array
 
 
 def plot_Revenue_Test(Array):
-    # Assuming Array[m,d,model,rev] is the four-dimensional array
-
+    # Assuming Array[f, m,d,model,rev] is the four-dimensional array
+    Array = Array[0,:,:,:,:]
     # Set up the plot
     #fig, ax = plt.subplots()
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 20), sharex=True)
@@ -352,7 +354,7 @@ def plot_Revenue_Test(Array):
 
     # Set x-axis label
     ax2.set_xlabel('Month of training')
-    ax2.set_xticks(range(0, Array.shape[0]),[1,2,3,4,5,6,7,8,9,10,11,12]) 
+    #ax2.set_xticks(range(0, Array.shape[0]),[1,2,3,4,5,6,7,8,9,10,11,12]) 
 
     # Set title for ax1
     ax1.set_title('Revenue for different training sizes and at different test days')
