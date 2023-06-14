@@ -233,7 +233,7 @@ def plot_Accepted_Bids2(df_input_FD2,df_input_DA,df_input_FD1,df_input_RT,fignam
 
 def Create_Array_from_Rev(df_Exp_rev,df_RT_rev):
     # Initialize a numpy array of size (number of different forecast accuracies,number of different train sizes, test days, models, result) with empty values
-    Array = np.empty((6, 1, 88, 4, 2))
+    Array = np.empty((6, 1, 88, 5, 2))
 
     for col in df_Exp_rev.columns:
         
@@ -257,48 +257,96 @@ def Create_Array_from_Rev(df_Exp_rev,df_RT_rev):
         Array[(f-1),(m-1),(d-1),1,0] = df_Exp_rev[col]['det']
         Array[(f-1),(m-1),(d-1),2,0] = df_Exp_rev[col]['sto']
         Array[(f-1),(m-1),(d-1),3,0] = df_Exp_rev[col]['learn']
+        Array[(f-1),(m-1),(d-1),4,0] = df_Exp_rev[col]['oracle']
 
         Array[(f-1),(m-1),(d-1),0,1] = df_RT_rev[col]['rule']
         Array[(f-1),(m-1),(d-1),1,1] = df_RT_rev[col]['det']
         Array[(f-1),(m-1),(d-1),2,1] = df_RT_rev[col]['sto']
         Array[(f-1),(m-1),(d-1),3,1] = df_RT_rev[col]['learn']
+        Array[(f-1),(m-1),(d-1),4,1] = df_RT_rev[col]['oracle']
         
     return Array
 
+def Count_performance_for_each_model(Array,includeOracle = False):
+    
+    #  Array = np.empty((6, 1, 88, 5, 2))
+    #  (number of different forecast accuracies,number of different train sizes, test days, models, result) with empty values
 
-def plot_Revenue_Test(Array):
+    # How many times does each model win?
+    
+    # Pick Oracle or not?
+    if includeOracle == False:
+        noOracle = 4
+    else:
+        noOracle = 5
+
+    model_order = ['rule','det','sto','feature','oracle']
+    rev_type_order = ['Expected','RT']
+    Array_to_use = Array[:,:,:,0:noOracle,:]
+
+    argmax_result = np.argmax(Array_to_use, axis=3)
+    #print(argmax_result)
+    CountArray = np.zeros((Array.shape[0],Array.shape[1],Array.shape[4],noOracle), dtype=int)  # Initialize the counts matrix
+    for f in range(Array.shape[0]): # Forecast
+        for sample_n in range(Array.shape[1]): # Sample length
+            for rev in range(Array.shape[4]): # Expected / real rev
+                CountArray[f,sample_n,rev,:] =np.bincount(argmax_result[f,sample_n,:,rev],minlength=noOracle)
+
+    # CountArray has dim (f, sample_len, rev_type, model_type)
+    return CountArray, model_order,rev_type_order
+
+
+
+
+
+def plot_Revenue_Test(Array, visualize_forecasts = False):
     # Assuming Array[f, m,d,model,rev] is the four-dimensional array
-    Array = Array[0,:,:,:,:]
+    if visualize_forecasts == False:
+        Array = Array[0,:,:,:,:]
+        iteration_numbers = Array.shape[0]
+        x_length = Array.shape[0]
+        xlabel_name = 'Month of training'
+        ax1_name = 'Revenue for different training sizes and at different test days'
+        ax2_name = 'Mean revenue for different training sizes'
+
+    elif visualize_forecasts == True:
+        Array = Array[:,0,:,:,:]
+        iteration_numbers = Array.shape[0]
+        x_length = Array.shape[0]
+        xlabel_name = 'Forecasts'
+        ax1_name = 'Revenue for different forecasts and at different test days'
+        ax2_name = 'Mean revenue for different forecasts'
+        
     # Set up the plot
     #fig, ax = plt.subplots()
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 20), sharex=True)
 
     # Define a list of colors for models
-    colors = ['red' , 'blue', 'green', 'orange']
-    Model  = ['Rule', 'Det' , 'Sto'  , 'Learn' ]
+    colors = ['red' , 'blue', 'green', 'orange','purple']
+    Model  = ['Rule', 'Det' , 'Sto'  , 'Learn' ,'oracle']
 
     # Define a list of symbols for revs
     symbols = ['o'  , 's' ]
     Rev     = ['Exp', 'RT']
 
     # Define a list of x-axis movement for each rev
-    xaxis_move = [-0.2,-0.15,-0.1,-0.05, 0.05,0.1,0.15,0.2]
+    xaxis_move = [-0.25,-0.2,-0.15,-0.1,-0.05, 0.05,0.1,0.15,0.2,0.25]
 
     marker_size = 2
     marker_size_2 = 20
 
-    # Calculate the mean along the second axis (axis=1)
+    # Calculate the mean along the test day axis (axis=1)
     mean_array_along_d = np.mean(Array, axis=1, keepdims=True)
 
     # Iterate over d values
-    for d in range(Array.shape[1]):
+    for d in range(iteration_numbers):
         # Iterate over rev values
         count = 0
-        for rev in range(2):
+        for rev in range(len(Rev)):
             # Iterate over model values
-            for model in range(4):
+            for model in range(len(Model)):
                 
-                # Extract the data for the current d, model, and rev
+
                 data = Array[:, d, model, rev]
 
                 # Get the unique color and symbol based on the model and rev
@@ -307,7 +355,7 @@ def plot_Revenue_Test(Array):
 
                 # Calculate the modified x values based on the rev
                 
-                modified_x = list(range(Array.shape[0]))  # Convert range object to a list
+                modified_x = list(range(x_length))  # Convert range object to a list
                 modified_x = [x + xaxis_move[count] for x in modified_x]
                 count = count + 1 # For modified_x
 
@@ -330,9 +378,9 @@ def plot_Revenue_Test(Array):
 
     # The other subplot
     count = 0
-    for rev in range(2):
+    for rev in range(len(Rev)):
         # Iterate over model values
-        for model in range(4):
+        for model in range(len(Model)):
 
             # Extract the data for the current d, model, and rev
             data = mean_array_along_d[:, 0, model, rev]
@@ -342,25 +390,27 @@ def plot_Revenue_Test(Array):
             symbol = symbols[rev]
 
             # Calculate the modified x values based on the rev
-            modified_x = list(range(Array.shape[0]))  # Convert range object to a list
+            modified_x = list(range(x_length))  # Convert range object to a list
             modified_x = [x + xaxis_move[count] for x in modified_x]
             count = count + 1  # For modified_x
 
             # Plot the data with the unique color and symbol
+            #if model == 0 or model == 1 or model == 4: # if rule, det or 
             ax2.scatter(modified_x, data, color=color, marker=symbol, s=marker_size_2)
+
 
     # Set y-axis label
     ax2.set_ylabel('Revenue [EUR]')
 
     # Set x-axis label
-    ax2.set_xlabel('Month of training')
+    ax2.set_xlabel(xlabel_name)
     #ax2.set_xticks(range(0, Array.shape[0]),[1,2,3,4,5,6,7,8,9,10,11,12]) 
 
     # Set title for ax1
-    ax1.set_title('Revenue for different training sizes and at different test days')
+    ax1.set_title(ax1_name)
 
     # Set title for ax2
-    ax2.set_title('Mean revenue for different training sizes')
+    ax2.set_title(ax2_name)
 
     # Show the plot
     plt.show()

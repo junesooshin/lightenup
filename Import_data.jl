@@ -403,7 +403,9 @@ function rev_sigmoid(x)
 end
 
 function save_dict(dict, name)
-    dir = dirname(@__FILE__) # The path of the script
+    
+    #dir = dirname(@__FILE__) # The path of the script
+    dir = dirname(pwd()) # current directory. Go to where all the thesis folders are present
     filename = "/Results/$(name).json" # The path to the results and the filename
     filepath = string(dir,filename) # The full path
     json_save = JSON.json(dict)
