@@ -231,9 +231,10 @@ def plot_Accepted_Bids2(df_input_FD2,df_input_DA,df_input_FD1,df_input_RT,fignam
 
 
 
-def Create_Array_from_Rev(df_Exp_rev,df_RT_rev):
+
+def Create_Array_from_Rev(df_Exp_rev,df_RT_rev,SampleSizes, NumForecasts):
     # Initialize a numpy array of size (number of different forecast accuracies,number of different train sizes, test days, models, result) with empty values
-    Array = np.empty((6, 1, 88, 5, 2))
+    Array = np.empty((NumForecasts, len(SampleSizes), 88, 5, 2))
 
     for col in df_Exp_rev.columns:
         
@@ -246,26 +247,35 @@ def Create_Array_from_Rev(df_Exp_rev,df_RT_rev):
         # Extract the 'm', 'd', and 't' values from column name
         parts = col.split('_')
 
+        Samplesize = int(parts[1][1:])
+        
+        # Only if the file is part of the specified range then include it.
+        if Samplesize in SampleSizes: 
+            m = SampleSizes.index(Samplesize)
+        else:
+            continue
+        
         f = int(parts[0][1:])
-        m = 1 # int(parts[0][1:])
+        
         d = int(parts[2][3:])
         t = int(parts[3][1:])
 
 
 
-        Array[(f-1),(m-1),(d-1),0,0] = df_Exp_rev[col]['rule']
-        Array[(f-1),(m-1),(d-1),1,0] = df_Exp_rev[col]['det']
-        Array[(f-1),(m-1),(d-1),2,0] = df_Exp_rev[col]['sto']
-        Array[(f-1),(m-1),(d-1),3,0] = df_Exp_rev[col]['learn']
-        Array[(f-1),(m-1),(d-1),4,0] = df_Exp_rev[col]['oracle']
+        Array[(f-1),(m),(d-1),0,0] = df_Exp_rev[col]['rule']
+        Array[(f-1),(m),(d-1),1,0] = df_Exp_rev[col]['det']
+        Array[(f-1),(m),(d-1),2,0] = df_Exp_rev[col]['sto']
+        Array[(f-1),(m),(d-1),3,0] = df_Exp_rev[col]['learn']
+        Array[(f-1),(m),(d-1),4,0] = df_Exp_rev[col]['oracle']
 
-        Array[(f-1),(m-1),(d-1),0,1] = df_RT_rev[col]['rule']
-        Array[(f-1),(m-1),(d-1),1,1] = df_RT_rev[col]['det']
-        Array[(f-1),(m-1),(d-1),2,1] = df_RT_rev[col]['sto']
-        Array[(f-1),(m-1),(d-1),3,1] = df_RT_rev[col]['learn']
-        Array[(f-1),(m-1),(d-1),4,1] = df_RT_rev[col]['oracle']
+        Array[(f-1),(m),(d-1),0,1] = df_RT_rev[col]['rule']
+        Array[(f-1),(m),(d-1),1,1] = df_RT_rev[col]['det']
+        Array[(f-1),(m),(d-1),2,1] = df_RT_rev[col]['sto']
+        Array[(f-1),(m),(d-1),3,1] = df_RT_rev[col]['learn']
+        Array[(f-1),(m),(d-1),4,1] = df_RT_rev[col]['oracle']
         
     return Array
+
 
 def Count_performance_for_each_model(Array,includeOracle = False):
     
@@ -299,15 +309,16 @@ def Count_performance_for_each_model(Array,includeOracle = False):
 
 
 
-def plot_Revenue_Test(Array, visualize_forecasts = False):
+def plot_Revenue_Test(Array, xtick_names, marker_size = 2, marker_size_2 = 20, visualize_forecasts = False ):
     # Assuming Array[f, m,d,model,rev] is the four-dimensional array
     if visualize_forecasts == False:
         Array = Array[0,:,:,:,:]
         iteration_numbers = Array.shape[0]
         x_length = Array.shape[0]
-        xlabel_name = 'Month of training'
+        xlabel_name = 'Training Sample'
         ax1_name = 'Revenue for different training sizes and at different test days'
         ax2_name = 'Mean revenue for different training sizes'
+        xtick_range = range(0, x_length)
 
     elif visualize_forecasts == True:
         Array = Array[:,0,:,:,:]
@@ -316,6 +327,7 @@ def plot_Revenue_Test(Array, visualize_forecasts = False):
         xlabel_name = 'Forecasts'
         ax1_name = 'Revenue for different forecasts and at different test days'
         ax2_name = 'Mean revenue for different forecasts'
+        xtick_range = range(0, x_length)
         
     # Set up the plot
     #fig, ax = plt.subplots()
@@ -332,8 +344,7 @@ def plot_Revenue_Test(Array, visualize_forecasts = False):
     # Define a list of x-axis movement for each rev
     xaxis_move = [-0.25,-0.2,-0.15,-0.1,-0.05, 0.05,0.1,0.15,0.2,0.25]
 
-    marker_size = 2
-    marker_size_2 = 20
+
 
     # Calculate the mean along the test day axis (axis=1)
     mean_array_along_d = np.mean(Array, axis=1, keepdims=True)
@@ -404,7 +415,7 @@ def plot_Revenue_Test(Array, visualize_forecasts = False):
 
     # Set x-axis label
     ax2.set_xlabel(xlabel_name)
-    #ax2.set_xticks(range(0, Array.shape[0]),[1,2,3,4,5,6,7,8,9,10,11,12]) 
+    ax2.set_xticks(xtick_range,xtick_names) 
 
     # Set title for ax1
     ax1.set_title(ax1_name)
