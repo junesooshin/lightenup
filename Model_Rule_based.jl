@@ -2,14 +2,13 @@
 
 # Provide a day of 24 hours of forecasted prices to get the rule based policy and action of the battery
 # Assumed that battery can charge or discharge fully in one hour. Assumed that no activation occurs in FCR-D.
-function baseline_model_DA_and_FCR_D(Data, forecast_day_2023, Threshold_Max_coef, Threshold_Min_coef,E_nom = 6,output_Capacity = 6,input_Capacity  = 6)
+function baseline_model_DA_and_FCR_D(Data, Threshold_Max_coef, Threshold_Min_coef,E_nom = 6,output_Capacity = 6,input_Capacity  = 6)
 
     # Input
 
     # 
-    # FCR_D_Dn , Forecasted price [24,]
-    # FCR_D_Up , Forecasted price [24,]
-    # Spot     , Forecasted price [24,]
+    # Data - FCR_D_Dn , Forecasted price [24,]  Spot     , Forecasted price [24,] FCR_D_Up , Forecasted price [24,]
+    # 
     # Threshold_Max_coef. Decide coefficient for upper bound for when Discharge should occur
     # Threshold_Min_coef. Decide lower bound for when charge should occur
     # E_nom = 6 # [MWh] Energy storage capacity for one unit (2020)
@@ -24,9 +23,9 @@ function baseline_model_DA_and_FCR_D(Data, forecast_day_2023, Threshold_Max_coef
     # Threshold_Max  , Upperbound for when spot activates
     # Threshold_Min  , lowerbound for when spot activates
 
-    FCR_D_Dn = Data["FD2_down"][:,forecast_day_2023]
-    FCR_D_Up = Data["FD2_up"][:,forecast_day_2023]
-    Spot     = Data["Spot"][:,forecast_day_2023]
+    FCR_D_Dn = Data["FD2_down"]
+    FCR_D_Up = Data["FD2_up"]
+    Spot     = Data["Spot"]
     SOC_max = Data["E_nom"]
     Cost_per_cycle = Data["Cost_per_cycle"]
 
@@ -43,16 +42,6 @@ function baseline_model_DA_and_FCR_D(Data, forecast_day_2023, Threshold_Max_coef
     # Initialize the first State of charge
     #SOC[1] = Initialize_SOC_baseline_model(FCR_D_Dn, FCR_D_Up, Spot) 
     SOC_ini = Data["SOC_0"]
-
-    # if SOC[1] == 1 # Based on the initial state of charge set the FCR-D up/dn accordingly.
-    #     FCR_D_Up_action[1] = 1
-    # elseif SOC[1] == 0
-    #     FCR_D_Dn_action[1] = 1
-    # else
-    #     FCR_D_Up_action[1] = SOC[1]
-    #     FCR_D_Dn_action[1] = 1 - SOC[1]
-    
-    # end
 
     # Across the whole day, 24 hours
     for h in 1:24

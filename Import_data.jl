@@ -35,7 +35,6 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0)
     d_update. Another iteration which go over each test hour, and with that one update the training data to move that with one hour.
         Update. d = 1 -> first day in 2023, d = 2 -> 2nd day, .... d = 89 -> last hour
     index_all_data. All the data foloowing below structure:
-    AuctionType. ["D-2", "DA", "D-1"]. Depending on the auctiontype the forecast will change.
 
 
     # So the features are data from 2022-01-01 -> 
@@ -140,7 +139,7 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0)
     
     #######  FORECAST INDEXES  #######
 
-    start_forecast_idx = d_update*24 + 2*24
+    start_forecast_idx = end_train_idx + 2*24
     end_forecast_idx = start_forecast_idx + 24
     Forecast_period_idx = index[(start_forecast_idx+1):end_forecast_idx]
 
@@ -360,8 +359,8 @@ function load_data(file)
 
     elseif occursin.("forecast",file) # check if forecast is in file
         filepath = string(dir , "/Processed_data/", file , ".csv")
-        data_import_all = DataFrame(CSV.File(filepath))
-        data_import = data_import_all[(24*2)+1:end, :] #Cut the first two days to match test data
+        data_import = DataFrame(CSV.File(filepath))
+        #data_import = data_import_all[(24*2)+1:end, :] #Cut the first two days to match test data
         return data_import
 
     elseif file == "forgettingFactor"

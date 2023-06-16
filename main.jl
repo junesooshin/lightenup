@@ -21,12 +21,12 @@ include("Model_Realtime.jl")
 
 #Functions to run models
 function run_rule(processed_data, forecast_data, d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023)
-    #Rule-based model
-    forecast_day_2023 = moving_day + 1 
-    Data_index = Define_Training_and_Test_index(d_train_set, moving_day) #default d=0, AuctionType="D-2"
     
-    data_rule = data_import_Rule(forecast_data)
-    Bid_Results_rule = baseline_model_DA_and_FCR_D(data_rule, forecast_day_2023, Threshold_Max_coef, Threshold_Min_coef)
+    #Rule-based model
+    Data_index = Define_Training_and_Test_index(d_train_set, moving_day) #default d=0, AuctionType="D-2"
+    data_rule = data_import_Rule(forecast_data,Data_index)
+
+    Bid_Results_rule = baseline_model_DA_and_FCR_D(data_rule, Threshold_Max_coef, Threshold_Min_coef)
 
     #Test rule-based model real-time
     data_real_rule = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_rule)
@@ -38,14 +38,15 @@ function run_rule(processed_data, forecast_data, d_train_set, moving_day, Thresh
 end
 
 function run_det(processed_data, forecast_data, d_train_set, moving_day, test_day_2023)
-    #Deterministic Model
-    forecast_day_2023 = moving_day + 1 
-    Data_index = Define_Training_and_Test_index(d_train_set, moving_day) #default d=0, AuctionType="D-2"
-    data_det = data_import_Deterministic(forecast_data, forecast_day_2023)
-    Bid_Results_det  = Deterministic_Model(data_det)
 
+    #Deterministic Model
+    Data_index = Define_Training_and_Test_index(d_train_set, moving_day) 
+    data_det = data_import_Deterministic(forecast_data, Data_index)
+    Bid_Results_det  = Deterministic_Model(data_det)
+    
     #Test deterministic model real-time
     data_real_det = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_det)
+    
     RT_results_det = RT_operation(data_real_det)
 
     result_det = Dict("Bid" => Bid_Results_det, "RT" => RT_results_det)
@@ -54,13 +55,16 @@ function run_det(processed_data, forecast_data, d_train_set, moving_day, test_da
 end
 
 function run_oracle(processed_data, d_train_set, moving_day, test_day_2023)
+
     #Deterministic Model
     Data_index = Define_Training_and_Test_index(d_train_set, moving_day) #default d=0, AuctionType="D-2"
     data_oracle = data_import_Oracle(processed_data, Data_index,test_day_2023)
+    
     Bid_Results_oracle  = Deterministic_Model(data_oracle)
-
+    
     #Test deterministic model real-time
     data_real_oracle = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_oracle)
+    
     RT_results_oracle = RT_operation(data_real_oracle)
 
     result_oracle = Dict("Bid" => Bid_Results_oracle, "RT" => RT_results_oracle)
@@ -75,10 +79,13 @@ function run_sto(processed_data, forecast_data, d_train_set, moving_day, size_W1
 
     data_sto = data_import_stochastic(processed_data, forecast_data, Data_index, size_W1, size_W2, size_W3, forecast_day_2023)
     sto_solution = stochastic_model(data_sto)
-    Bid_Results_sto = create_bid_stochastic(data_sto, sto_solution)
+    #print(data_sto["f_FD1_up_t"])
 
+    Bid_Results_sto = create_bid_stochastic(data_sto, sto_solution)
+    #print(Bid_Results_sto["f_lambda_FD1_up"])
     #Test stochastic model real-time
     data_real_sto = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_sto)
+    #print(data_real_sto["FD1_up_price"])
     RT_results_sto = RT_operation(data_real_sto)
 
     result_sto = Dict("Bid" => Bid_Results_sto, "RT" => RT_results_sto)
@@ -95,14 +102,17 @@ function run_learn(processed_data, forecast_data, forgettingFactor_data, d_train
     # Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up","FD_act_down","FD_act_up"]
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
     #Feature_Selection = ["Spot","FD1_down","FD2_down","FD1_up","FD2_up","Spot^2","Spot FD1_down","Spot FD2_down","Spot FD1_up","Spot FD2_up","FD1_down^2","FD1_down FD2_down","FD1_down FD1_up","FD1_down FD2_up","FD2_down^2","FD2_down FD1_up","FD2_down FD2_up","FD1_up^2","FD1_up FD2_up","FD2_up^2"]
+    
     data_learn = data_import_Learning(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling)
 
     Architecture = "GA" # General or Hourly architecture of the coefficients
     learn_solution = Training_Learning_Model(data_learn, Data_index, Architecture)
+    print(data_learn["f_FD1_up_t"])
     Bid_Results_learn = Create_bid_Learning(data_learn, learn_solution, forecast_day_2023)
 
     #Test learning model real-time
     data_real_learn = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_learn)
+    print(data_real_learn["FD1_up_price"])
     RT_results_learn = RT_operation(data_real_learn)
 
     result_learn = Dict("Bid" => Bid_Results_learn, "RT" => RT_results_learn)
@@ -113,10 +123,7 @@ end
 function run_all(Models_range, d_train_set_range, moving_day_range,forecast_range, out_of_sample, scaling, save_all)
     #Fixed parameters
     Threshold_Max_coef = 0.9
-    Threshold_Min_coef = 1.1
-    # best_scenario_combinations = [2  2  3  3  3  4  5  5  5  5  4  5;      
-    #                               3  5  5  5  5  5  6  6  6  6  8  8;      
-    #                               5  6  6  8 10  9  7  8  9 10 10  9] 
+    Threshold_Min_coef = 1.1 
 
     processed_data = load_data("processed")
     forgettingFactor_data = load_data("forgettingFactor")
@@ -147,7 +154,7 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                     
 
                     if issubset(["rule"],Models_range)  == true # Check if rule need to be runned
-                        result_rule = run_rule(processed_data, forecast_data,d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023)
+                        result_rule = run_rule(processed_data, forecast_data, d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023)
                         RT_rule_revenue = result_rule["RT"]["revenue"]
                         Exp_rule_revenue = sum(result_rule["Bid"]["obj_t"])
                         if save_all == true
@@ -237,15 +244,15 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     return RT_revenue, Exp_revenue
 end
 
-#Models_range = ["oracle"]
-Models_range = ["rule","det","oracle","sto","learn"]
+Models_range = ["learn"]
+#Models_range = ["rule","det","oracle","sto","learn"]
 
 #Default parameters for 'run_all' function
-#d_train_set_range = [5]
-d_train_set_range = [2,4,5,7,9,11]
+d_train_set_range = [5]
+#d_train_set_range = [2,4,5,7,9,11]
 #d_train_set_range = 1:10 #Set one value for one test case 
-moving_day_range = 0:87 #(within range 0:87)
-forecast_range = ["forecast1"]
+moving_day_range = 1 #(within range 0:87)
+forecast_range = ["forecast_all1"]
 #forecast_range = ["forecast1", "forecast2", "forecast3", "forecast4", "forecast5", "forecast6"]
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for learning)
@@ -253,12 +260,3 @@ save_all = true #true/false (for saving individual results)
 
 RT_revenue, Exp_revenue = run_all(Models_range,d_train_set_range, moving_day_range,forecast_range, out_of_sample, scaling, save_all)
 
-#=
-# Test Learning Hourly
-d_train_set = d_train_set_range
-moving_day = 1
-test_day_2023 = 1
-result_learn = run_learn(d_train_set, moving_day, test_day_2023, scaling)
-save_dict(result_learn, "learn_$(id)")
-result_learn["Bid"]["q_FD2_up"]
-=#

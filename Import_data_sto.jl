@@ -100,6 +100,12 @@ function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, 
                 "f_FD2_up" => vol_avg_price_FD2_up,
                 "f_Spot_price" => f_Spot_price,
 
+                "f_DA_t" =>f_Spot_price,
+                "f_FD1_up_t" => vol_avg_price_FD1_up, 
+                "f_FD2_up_t" => vol_avg_price_FD2_up, 
+                "f_FD1_dn_t" => vol_avg_price_FD1_down,
+                "f_FD2_dn_t" => vol_avg_price_FD2_down,
+
                 # The training data which is being provided to the model
                 "f_FD2_up_tw" => FD2_up_train, 
                 "f_FD2_dn_tw" => FD2_down_train,

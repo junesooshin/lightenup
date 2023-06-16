@@ -189,18 +189,13 @@ function create_bid_stochastic(Data, sto_solution)
     f_FD2_y_up_t = mean(sto_solution["f_FD2_y_up_tw_input"], dims=2)[:,1]
     f_FD2_y_dn_t = mean(sto_solution["f_FD2_y_dn_tw_input"], dims=2)[:,1]
 
-    #f_lambda_FD2_up = mean(Data["f_FD2_up_tw"], dims=2)[:,1]
-    #f_lambda_FD2_dn = mean(Data["f_FD2_dn_tw"], dims=2)[:,1]
-    #f_lambda_FD1_up = mean(reshape(Data["f_FD1_up_tw"], (24,size_W1*size_W2*size_W3)), dims=2)[:,1]
-    #f_lambda_FD1_dn = mean(reshape(Data["f_FD1_dn_tw"], (24,size_W1*size_W2*size_W3)), dims=2)[:,1]
-
     ################ The Forecasted prices i.e. the bid prices ################
 
-    f_DA = Data["f_Spot_price"] #Already selected for forecast day
-    f_lambda_FD2_up = Data["f_FD2_up"][:,1] #Flatten array
-    f_lambda_FD2_dn = Data["f_FD2_dn"][:,1] #Flatten array
-    f_lambda_FD1_up = Data["f_FD1_up"][:,1] #Flatten array
-    f_lambda_FD1_dn = Data["f_FD1_dn"][:,1] #Flatten array
+    f_DA = Data["f_DA_t"] #Already selected for forecast day
+    f_lambda_FD2_up = Data["f_FD2_up_t"][:,1] #Flatten array
+    f_lambda_FD2_dn = Data["f_FD2_dn_t"][:,1] #Flatten array
+    f_lambda_FD1_up = Data["f_FD1_up_t"][:,1] #Flatten array
+    f_lambda_FD1_dn = Data["f_FD1_dn_t"][:,1] #Flatten array
 
     #Calculate expected revenue
     G_FD2_t = f_lambda_FD2_up.*p_FD2_up .+ f_lambda_FD2_dn.*p_FD2_dn 
