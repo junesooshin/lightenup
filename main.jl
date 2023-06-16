@@ -85,7 +85,6 @@ function run_sto(processed_data, forecast_data, d_train_set, moving_day, size_W1
     #print(Bid_Results_sto["f_lambda_FD1_up"])
     #Test stochastic model real-time
     data_real_sto = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_sto)
-    #print(data_real_sto["FD1_up_price"])
     RT_results_sto = RT_operation(data_real_sto)
 
     result_sto = Dict("Bid" => Bid_Results_sto, "RT" => RT_results_sto)
@@ -95,24 +94,24 @@ end
 
 function run_learn(processed_data, forecast_data, forgettingFactor_data, d_train_set, moving_day, test_day_2023, scaling)
     #Learning Model
-    forecast_day_2023 = moving_day + 1 
 
-    Data_index = Define_Training_and_Test_index(d_train_set, moving_day) #default d=0, AuctionType="D-2"
+    #Data_index = Define_Training_and_Test_index(d_train_set, moving_day, "With forecast in learning")
+    Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
 
     # Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up","FD_act_down","FD_act_up"]
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
     #Feature_Selection = ["Spot","FD1_down","FD2_down","FD1_up","FD2_up","Spot^2","Spot FD1_down","Spot FD2_down","Spot FD1_up","Spot FD2_up","FD1_down^2","FD1_down FD2_down","FD1_down FD1_up","FD1_down FD2_up","FD2_down^2","FD2_down FD1_up","FD2_down FD2_up","FD1_up^2","FD1_up FD2_up","FD2_up^2"]
     
     data_learn = data_import_Learning(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling)
-
+    
     Architecture = "GA" # General or Hourly architecture of the coefficients
     learn_solution = Training_Learning_Model(data_learn, Data_index, Architecture)
-    print(data_learn["f_FD1_up_t"])
-    Bid_Results_learn = Create_bid_Learning(data_learn, learn_solution, forecast_day_2023)
+    
+    Bid_Results_learn = Create_bid_Learning(data_learn, learn_solution)
 
     #Test learning model real-time
     data_real_learn = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_learn)
-    print(data_real_learn["FD1_up_price"])
+    
     RT_results_learn = RT_operation(data_real_learn)
 
     result_learn = Dict("Bid" => Bid_Results_learn, "RT" => RT_results_learn)
@@ -166,7 +165,7 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                     end
 
                     if issubset(["det"],Models_range)  == true
-                        result_det = run_det(processed_data, forecast_data,d_train_set, moving_day, test_day_2023)
+                        result_det = run_det(processed_data, forecast_data, d_train_set, moving_day, test_day_2023)
                         RT_det_revenue = result_det["RT"]["revenue"]
                         Exp_det_revenue = sum(result_det["Bid"]["obj_t"])
                         if save_all == true
@@ -248,15 +247,17 @@ Models_range = ["learn"]
 #Models_range = ["rule","det","oracle","sto","learn"]
 
 #Default parameters for 'run_all' function
-d_train_set_range = [5]
+d_train_set_range = [2,5]
 #d_train_set_range = [2,4,5,7,9,11]
 #d_train_set_range = 1:10 #Set one value for one test case 
-moving_day_range = 1 #(within range 0:87)
-forecast_range = ["forecast_all1"]
-#forecast_range = ["forecast1", "forecast2", "forecast3", "forecast4", "forecast5", "forecast6"]
+moving_day_range = 19 #(within range 0:87)
+#moving_day_range = 0:87 #(within range 0:87)
+#forecast_range = ["forecast_all1"]
+forecast_range = ["forecast_real","forecast_all1", "forecast_all2", "forecast_all3", "forecast_all4", "forecast_all5", "forecast_all6"]
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for learning)
 save_all = true #true/false (for saving individual results)
 
 RT_revenue, Exp_revenue = run_all(Models_range,d_train_set_range, moving_day_range,forecast_range, out_of_sample, scaling, save_all)
+
 

@@ -427,15 +427,15 @@ def plot_Revenue_Test(Array, xtick_names, marker_size = 2, marker_size_2 = 20, v
     plt.show()
 
 
-def import_test_case(current_directory, choose_id):
+def import_test_case(current_directory, Add_on_path, choose_id):
     #Import JSON files
-    with open(current_directory + f'/Results/det_{choose_id}.json') as results_det_json:
+    with open(current_directory + Add_on_path + f'/det_{choose_id}.json') as results_det_json:
         Results_det = json.load(results_det_json)
-    with open(current_directory + f'/Results/learn_{choose_id}.json') as results_learn_json:
+    with open(current_directory + Add_on_path + f'/learn_{choose_id}.json') as results_learn_json:
         Results_learn = json.load(results_learn_json)
-    with open(current_directory + f'/Results/sto_{choose_id}.json') as results_sto_json:
+    with open(current_directory + Add_on_path + f'/sto_{choose_id}.json') as results_sto_json:
         Results_sto = json.load(results_sto_json)
-    with open(current_directory + f'/Results/rule_{choose_id}.json') as results_rule_json:
+    with open(current_directory + Add_on_path + f'/rule_{choose_id}.json') as results_rule_json:
         Results_rule = json.load(results_rule_json)
 
     #Convert results in to np.arrays
@@ -865,7 +865,7 @@ def plot_battery_dynamics(RT_result, model, save):
 
     # plt.show()
 
-def save_plots(current_directory, choose_id, save, model, with_acceptance, rev_plot):
+def save_plots(current_directory,Add_on_path, choose_id, save, model, with_acceptance, rev_plot):
     #Fix color schemes
     color = {'FD2_up': '#FFA500', # orange
             'FD2_dn': '#2986cc', # blue
@@ -875,7 +875,7 @@ def save_plots(current_directory, choose_id, save, model, with_acceptance, rev_p
             'FD1_dn': '#674ea7', # darkgreen
             'SOC': 'black'}
 
-    results = import_test_case(current_directory, choose_id)
+    results = import_test_case(current_directory, Add_on_path, choose_id)
 
     #Plotting functions
     bid_plots(results[model]['Bid'], model, color, save)
@@ -886,7 +886,7 @@ def save_plots(current_directory, choose_id, save, model, with_acceptance, rev_p
         plot_coefficients(results[model]['Bid'], color, save)
     plot_exp_and_RT_revenue(results, rev_plot, save)
     plot_battery_dynamics(results[model]['RT'], model, save)
-
+    
     #Print summary
     print('Test case: ', choose_id)
     result_summary = [["RT", results['Rule']['RT']['revenue'], results['Det']['RT']['revenue'], results['Sto']['RT']['revenue'], results['Learn']['RT']['revenue']],

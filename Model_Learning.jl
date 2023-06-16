@@ -1,10 +1,11 @@
 
 function Training_Learning_Model(Data, Data_index, Architecture)
 
-    #=
-    Architecture = "GA" -> General architecture. Coefficient for each feature.
-                 = "HA" -> Hourly architecture. Coefficient for each feature and hour in a day
-    =#
+    #
+    # Data: All the data required for running the 
+    # Data_index: Provide the index for the sample data, test index and forecast indexes
+    # Architecture: The architecture of the coefficient. Either GA= coefficient for each feature. Or HA=coefficient for each feature and hour
+    # Model_configuration: "Without forecast", "With forecast" or "Forecast minimization"
 
 
 
@@ -21,6 +22,19 @@ function Training_Learning_Model(Data, Data_index, Architecture)
 
     # Collect FEATURES SPECIFIC INFORMATION
     X = Data["X"] # All the features
+    X_train_f = Data["X_train_f"] # All the forecast features to use in the training 
+    X_f = Data["X_f"] # Forecasted feature for the bidding day D
+
+    ## Concatenate X and X_f if forecast is used.
+    #if Model_configuration == "With forecast"
+    #    # Concatenate such that it go from: X:(24, 5, 5), X_f(24, 5) -> X(24,6,5)
+    #    println("hej")
+    #    println(size(X),size(X_f))
+    #    X_f = reshape(X_f,(24,5,1))
+    #    X = cat(X, X_f, dims=2)
+    #    println(size(X))
+    #end
+
     F = Data["n_features"] # Total number of features
 
 
@@ -143,13 +157,7 @@ function Training_Learning_Model(Data, Data_index, Architecture)
 
     @constraint(Model_Learning, SOC_con[h in H2, d in D], SOC[h,d] == SOC[h-1,d] + eta_ch*p_all_dn[h,d] - eta_dis*p_all_up[h,d])
 
-    # @constraint(Model_Learning, SOC[H_ini,D_ini] == SOC_0 + eta_ch*p_all_dn[H_ini,D_ini] - eta_dis*p_all_up[H_ini,D_ini])
     @constraint(Model_Learning, SOC_D2[d in D], SOC[H_ini,d] == SOC_0 + eta_ch*p_all_dn[H_ini,d]- eta_dis*p_all_up[H_ini,d])
-
-    # @constraint(Model_Learning, SOC_D2[d in D[2:end]], SOC[H_ini,d] == SOC[H[end],d-1]
-    #                                         + eta_ch * ( p_all_dn[H_ini,d] )
-    #                                         - eta_dis * ( p_all_up[H_ini,d] ) ) # Constraint State of charge
-
 
     @constraint(Model_Learning, SOC_cap_con[h in H, d in D], SOC[h,d] >= (b_FD2_up[h,d] + p_DA_up[h,d] + b_FD1_up[h,d]) ) # To ensure that enough energy in battery for upregulation/discharging. The SOC need to be bigger or equal to all the bids combined for that hour
     @constraint(Model_Learning, SOC_cap_con2[h in H, d in D], SOC[h,d] <= SOC_max - (b_FD2_dn[h,d] + p_DA_dn[h,d] + b_FD1_dn[h,d]) ) # To ensure that enough energy can be downregulated/charged to the battery. The SOC need to be smaller or equal to the max SOC minus all the downregulated bids combined for that hour
@@ -171,6 +179,7 @@ function Training_Learning_Model(Data, Data_index, Architecture)
     
     # Here you are setting the constraint for the bids for each days within the whole training period
     # As we have features for a long time period, we divide the features in days (24 hours) and great day/i constraints
+    
 
     if Architecture == "GA"
         @constraint(Model_Learning, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[1,f] * X[ h,d, f] for f in 1:F) + q_FD2_up[1,F+1])
@@ -179,6 +188,7 @@ function Training_Learning_Model(Data, Data_index, Architecture)
         @constraint(Model_Learning, DA_Coef_con_dn[h in H,  d in D], b_DA_dn[h,d] == sum(q_DA_dn[1,f] * X[ h,d, f] for f in 1:F) + q_DA_dn[1,F+1])
         @constraint(Model_Learning, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[1,F+1])
         @constraint(Model_Learning, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[1,F+1])
+
     elseif Architecture == "HA"
         @constraint(Model_Learning, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_up[h,F+1])
         @constraint(Model_Learning, FD2_Coef_con_dn[h in H, d in D], b_FD2_dn[h,d] == sum(q_FD2_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_dn[h,F+1])
@@ -187,7 +197,8 @@ function Training_Learning_Model(Data, Data_index, Architecture)
         @constraint(Model_Learning, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[h,F+1])
         @constraint(Model_Learning, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[h,F+1])
     end
-    
+
+
     ####################################################
     ############         Solving         ###############
     ####################################################
@@ -224,7 +235,7 @@ end
 
 
 
-function Create_bid_Learning(Data, Results_from_training, forecast_day_2023)
+function Create_bid_Learning(Data, Results_from_training)
 
     #=
     Data. (Dict). Data from Data_import_Julia. Should consist of all the features
@@ -266,8 +277,8 @@ function Create_bid_Learning(Data, Results_from_training, forecast_day_2023)
     f_lambda_FD1_dn = Data["f_FD1_dn_t"]
 
     features = Data["X_f"]
-    columnLength = length(features[1,1,:]) # all the columns in features (not accounting the offset)
-    offset = ones(length(features[:,1,1]))
+    columnLength = length(features[1,:]) # all the columns in features (not accounting the offset)
+    offset = ones(length(features[:,1]))
 
     ############### Compute the bids ##################
     b_FD2_up = sum(q_FD2_up[f] * features[:, f] for f in 1:columnLength) + offset * q_FD2_up[columnLength+1]

@@ -31,18 +31,12 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     forgetting = forgettingFactor_data[D_train,"1.0"]
 
     # Forecast data
-    #print(D_forecast)
-    #D_forecast = floor(Int, size(forecast_data)[1]/24) #number of days for forecasts
-    #print(D_forecast)
     if scaling == true
         forecast_df, scaled_forecast_parameters = min_max_scaler(forecast_data, "test", scaled_train_parameters)
     elseif scaling == false
         forecast_df = forecast_data
     end
-    print(size(forecast_df[N_forecast_flat, Feature_Selection]))
-    print(D_forecast)
-    print(F)
-    print(length(N_forecast_flat))
+
     X_f = Matrix(forecast_df[N_forecast_flat, Feature_Selection])
 
 
@@ -67,11 +61,11 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     #########################            FORECASTED PRICES           ############################
 
     # ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
-    f_FD2_up = reshape(forecast_data[N_forecast_flat,"FD2_up"], (length(H), 1) ) # 
-    f_FD2_dn = reshape(forecast_data[N_forecast_flat,"FD2_down"], (length(H), 1) ) # 
-    f_FD1_up = reshape(forecast_data[N_forecast_flat,"FD1_up"], (length(H), 1) ) # 
-    f_FD1_dn = reshape(forecast_data[N_forecast_flat,"FD1_down"], (length(H), 1) ) # 
-    f_DA = reshape(forecast_data[N_forecast_flat,"Spot"], (length(H), 1) ) # 
+    f_FD2_up_t = forecast_data[N_forecast_flat,"FD2_up"]
+    f_FD2_dn_t = forecast_data[N_forecast_flat,"FD2_down"]
+    f_FD1_up_t = forecast_data[N_forecast_flat,"FD1_up"]
+    f_FD1_dn_t = forecast_data[N_forecast_flat,"FD1_down"]
+    f_DA_t = forecast_data[N_forecast_flat,"Spot"]
 
 
     ##########################               PARAMETERS              ############################
@@ -91,15 +85,15 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     end
 
     Data = Dict(
-    "n_features" => n_features, "X" => X, "X_f" => X_f,
+    "n_features" => n_features, "X" => X, "X_f" => X_f, "X_train_f" => X_train_f,
     "f_FD1_y_up_t" => f_FD1_y_up_t, "f_FD1_y_dn_t" => f_FD1_y_dn_t, 
     "f_FD2_y_up_t" => f_FD2_y_up_t, "f_FD2_y_dn_t" => f_FD2_y_dn_t, 
     "lambda_FD2_up" => lambda_FD2_up, "lambda_FD2_dn" => lambda_FD2_dn,
     "lambda_FD1_up" => lambda_FD1_up, "lambda_FD1_dn" => lambda_FD1_dn,
     "lambda_DA" => lambda_DA,
-    "f_FD2_up_t" => f_FD2_up, "f_FD2_dn_t" => f_FD2_dn,
-    "f_FD1_up_t" => f_FD1_up, "f_FD1_dn_t" => f_FD1_dn,
-    "f_DA_t" => f_DA,
+    "f_FD2_up_t" => f_FD2_up_t, "f_FD2_dn_t" => f_FD2_dn_t,
+    "f_FD1_up_t" => f_FD1_up_t, "f_FD1_dn_t" => f_FD1_dn_t,
+    "f_DA_t" => f_DA_t,
     "a_up_t" => a_up_t, "a_dn_t" => a_dn_t, 
     "SOC_0" => SOC_0, "SOC_max" => SOC_max, "eta_dis" => eta_dis,"eta_ch" => eta_ch,
     "p_dis_max" => p_dis_max,"p_ch_max" => p_ch_max, "Cost_per_cycle" => Cost_per_cycle,
