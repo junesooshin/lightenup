@@ -277,16 +277,16 @@ function Create_bid_Learning(Data, Results_from_training)
     f_lambda_FD1_dn = Data["f_FD1_dn_t"]
 
     features = Data["X_f"]
-    columnLength = length(features[1,:]) # all the columns in features (not accounting the offset)
-    offset = ones(length(features[:,1]))
+    columnLength = length(features[1,1,:]) # all the columns in features (not accounting the offset) (F,)
+    offset = ones(length(features[:,1,1])) # (24,)
 
     ############### Compute the bids ##################
-    b_FD2_up = sum(q_FD2_up[f] * features[:, f] for f in 1:columnLength) + offset * q_FD2_up[columnLength+1]
-    b_FD2_dn = sum(q_FD2_dn[f] * features[:, f] for f in 1:columnLength) + offset * q_FD2_dn[columnLength+1]
-    b_DA_up  = sum(q_DA_up[f] * features[:, f] for f in 1:columnLength) + offset * q_DA_up[columnLength+1]
-    b_DA_dn  = sum(q_DA_dn[f] * features[:, f] for f in 1:columnLength) + offset * q_DA_dn[columnLength+1]
-    b_FD1_up = sum(q_FD1_up[f] * features[:, f] for f in 1:columnLength) + offset * q_FD1_up[columnLength+1]
-    b_FD1_dn = sum(q_FD1_dn[f] * features[:, f] for f in 1:columnLength) + offset * q_FD1_dn[columnLength+1]
+    b_FD2_up = sum(q_FD2_up[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD2_up[columnLength+1]
+    b_FD2_dn = sum(q_FD2_dn[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD2_dn[columnLength+1]
+    b_DA_up  = sum(q_DA_up[f] * features[:,1, f] for f in 1:columnLength) + offset * q_DA_up[columnLength+1]
+    b_DA_dn  = sum(q_DA_dn[f] * features[:,1, f] for f in 1:columnLength) + offset * q_DA_dn[columnLength+1]
+    b_FD1_up = sum(q_FD1_up[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD1_up[columnLength+1]
+    b_FD1_dn = sum(q_FD1_dn[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD1_dn[columnLength+1]
 
     # println(size(b_FD2_up))
     # println(size(f_lambda_FD2_up))

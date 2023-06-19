@@ -58,27 +58,6 @@ function stochastic_model(Data)
     @variable(m_sto, p_all_up[T,W1,W2,W3] >= 0)           
     @variable(m_sto, SOC[T,W1,W2,W3] >= 0)                 
 
-    #= # THIS ONE IS WEIRD!! IF YOU IMPLEMENT THESE THE VALUE WILL DECREASE DRAMATICALLY????
-    #Stage independent variable (revenues and costs at each stage)
-    @variable(m_sto, G_FD2)
-    @variable(m_sto, G_DA)                      
-    @variable(m_sto, G_FD1)             
-    @variable(m_sto, C_Deg)                       
-
-    @objective(m_sto, Max, G_FD2 + G_DA + G_FD1 - C_Deg )
-
-    @constraint(m_sto, G_FD2 == sum(pi1[w1]*(f_FD2_up_tw[t,w1]*p_FD2_up[t,w1]
-                                            + f_FD2_dn_tw[t,w1]*p_FD2_dn[t,w1]) 
-                                            for t in T, w1 in W1))
-    @constraint(m_sto, G_DA == sum(pi1[w1]*pi2[w2]*(f_DA_tw[t,w1,w2]
-                                                    *(p_DA_up[t,w1]-p_DA_dn[t,w1])) 
-                                                    for t in T, w1 in W1, w2 in W2)) 
-    @constraint(m_sto, G_FD1 == sum(pi1[w1]*pi2[w2]*pi3[w3]*(f_FD1_up_tw[t,w1,w2,w3]*p_FD1_up[t,w1,w2,w3]  
-                                                            + f_FD1_dn_tw[t,w1,w2,w3]*p_FD1_dn[t,w1,w2,w3]) 
-                                                            for t in T, w1 in W1, w2 in W2, w3 in W3)) 
-    @constraint(m_sto, C_Deg == sum(pi1[w1]*pi2[w2]*pi3[w3]*(p_all_dn[t,w1,w2,w3] + p_all_up[t,w1,w2,w3]) for t in T, w1 in W1, w2 in W2, w3 in W3)/(2*SOC_max) * Cost_per_cycle) # Constraint to set G_Bal
-    =#  
-
     #Stage independent variable (revenues and costs at each stage)
     @variable(m_sto, G_FD2[t in T] >= 0)
     @variable(m_sto, G_DA[t in T] >= 0)                      
@@ -191,7 +170,7 @@ function create_bid_stochastic(Data, sto_solution)
 
     ################ The Forecasted prices i.e. the bid prices ################
 
-    f_DA = Data["f_DA_t"] #Already selected for forecast day
+    f_DA_t = Data["f_DA_t"] #Already selected for forecast day
     f_lambda_FD2_up = Data["f_FD2_up_t"][:,1] #Flatten array
     f_lambda_FD2_dn = Data["f_FD2_dn_t"][:,1] #Flatten array
     f_lambda_FD1_up = Data["f_FD1_up_t"][:,1] #Flatten array
@@ -200,7 +179,7 @@ function create_bid_stochastic(Data, sto_solution)
     #Calculate expected revenue
     G_FD2_t = f_lambda_FD2_up.*p_FD2_up .+ f_lambda_FD2_dn.*p_FD2_dn 
     G_FD1_t = f_lambda_FD1_up.*p_FD1_up .+ f_lambda_FD1_dn.*p_FD1_dn 
-    G_DA_t = f_DA.*(b_DA_up .- b_DA_dn) 
+    G_DA_t = f_DA_t.*(b_DA_up .- b_DA_dn) 
     C_Deg_t = (p_all_dn .+ p_all_up)./(2*sto_solution["SOC_max"]) .* sto_solution["Cost_per_cycle"] 
     obj_t = G_FD2_t + G_FD1_t + G_DA_t - C_Deg_t
     
@@ -220,7 +199,7 @@ function create_bid_stochastic(Data, sto_solution)
                     "f_lambda_FD2_dn" => f_lambda_FD2_dn,
                     "f_lambda_FD1_up" => f_lambda_FD1_up, 
                     "f_lambda_FD1_dn" => f_lambda_FD1_dn,
-                    "f_DA_t" => f_DA,
+                    "f_DA_t" => f_DA_t,
                     "SOC" => soc,
                     "f_FD1_y_up_t" => f_FD1_y_up_t,
                     "f_FD1_y_dn_t" => f_FD1_y_dn_t,

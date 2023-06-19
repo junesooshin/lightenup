@@ -1,6 +1,6 @@
 #data import functions for learning model
 
-function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling)
+function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling, Model_configuration = "Without forecast in learning")
 
     N_train_flat = Data_index["N_train_flat"]
     D_train = Data_index["D_train"]
@@ -36,8 +36,9 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     elseif scaling == false
         forecast_df = forecast_data
     end
-
-    X_f = Matrix(forecast_df[N_forecast_flat, Feature_Selection])
+    
+    X_f = reshape(Matrix(forecast_df[N_forecast_flat, Feature_Selection]),(length(H),1,F))
+    
 
 
 
@@ -61,11 +62,43 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     #########################            FORECASTED PRICES           ############################
 
     # ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
-    f_FD2_up_t = forecast_data[N_forecast_flat,"FD2_up"]
-    f_FD2_dn_t = forecast_data[N_forecast_flat,"FD2_down"]
-    f_FD1_up_t = forecast_data[N_forecast_flat,"FD1_up"]
-    f_FD1_dn_t = forecast_data[N_forecast_flat,"FD1_down"]
-    f_DA_t = forecast_data[N_forecast_flat,"Spot"]
+    f_FD2_up_t = reshape(forecast_data[N_forecast_flat,"FD2_up"], (length(H), 1) ) 
+    f_FD2_dn_t = reshape(forecast_data[N_forecast_flat,"FD2_down"], (length(H), 1) ) 
+    f_FD1_up_t = reshape(forecast_data[N_forecast_flat,"FD1_up"], (length(H), 1) ) 
+    f_FD1_dn_t = reshape(forecast_data[N_forecast_flat,"FD1_down"], (length(H), 1) ) 
+    f_DA_t     = reshape(forecast_data[N_forecast_flat,"Spot"], (length(H), 1) ) 
+    f_a_up_t   = reshape(forecast_data[N_forecast_flat,"FD_act_up"], (length(H), 1) ) 
+    f_a_dn_t   = reshape(forecast_data[N_forecast_flat,"FD_act_down"], (length(H), 1) ) 
+    f_FD1_down_percentage = reshape(forecast_data[N_forecast_flat,"FD1_up_percentage"], (length(H), 1) )   
+    f_FD2_down_percentage = reshape(forecast_data[N_forecast_flat,"FD2_up_percentage"], (length(H), 1) )    
+    f_FD1_up_percentage = reshape(forecast_data[N_forecast_flat,"FD1_down_percentage"], (length(H), 1) )  
+    f_FD1_up_percentage = reshape(forecast_data[N_forecast_flat,"FD2_down_percentage"], (length(H), 1) ) 
+
+
+
+    # Modify training if forecast is included in training for Learning models
+    if Model_configuration == "With forecast in learning"
+
+        n_train_days = n_train_days + 1
+
+        X_with_forecast = cat(X, X_f,dims=(2)) # Add the forecast to the training data
+        X = X_with_forecast
+
+        # Collect the sample data and the forecasted price
+        lambda_DA = cat(lambda_DA, f_DA_t,dims=(2)) # Collect the spot
+        lambda_FD1_dn = cat(lambda_FD1_dn, f_FD1_dn_t,dims=(2))
+        lambda_FD2_dn = cat(lambda_FD2_dn, f_FD2_dn_t,dims=(2))
+        lambda_FD1_up = cat(lambda_FD1_up, f_FD1_up_t,dims=(2))
+        lambda_FD2_up = cat(lambda_FD2_up, f_FD2_up_t,dims=(2))
+        a_up_t = cat(a_up_t, f_a_up_t,dims=(2))
+        a_dn_t = cat(a_dn_t, f_a_dn_t,dims=(2))
+
+        f_FD1_y_dn_t = cat(f_FD1_y_dn_t, f_FD1_down_percentage,dims=(2))
+        f_FD2_y_dn_t = cat(f_FD2_y_dn_t, f_FD2_down_percentage,dims=(2))
+        f_FD1_y_up_t = cat(f_FD1_y_up_t, f_FD1_up_percentage,dims=(2))
+        f_FD2_y_up_t = cat(f_FD2_y_up_t, f_FD2_up_percentage,dims=(2))
+
+    end
 
 
     ##########################               PARAMETERS              ############################

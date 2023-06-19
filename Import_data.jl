@@ -24,7 +24,7 @@ function Battery_Specifications(BatteryType)
     end
 end
 
-function Define_Training_and_Test_index(d_train_set, d_update = 0, Model_configuration = "Without forecast in learning")
+function Define_Training_and_Test_index(d_train_set, d_update = 0)
 
     #=
     So the data is provided as all of the data for the given year 2022. This function seperate the data such that only the specified period is utilized
@@ -154,18 +154,6 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0, Model_configu
     D_forecast = collect(1:days_in_forecast)       # The total number of days to be iterated over
     H       = collect(1:24)                        # The total number of hours to be iterated over
 
-
-    # Modify training if forecast is included in training for Learning models
-    if Model_configuration == "With forecast in learning"
-
-        days_in_training_modified = days_in_training+days_in_forecast
-        D_train = collect(1:( days_in_training_modified )) 
-        print(D_train)
-        Training_period_idx = vcat(Training_period_idx, Forecast_period_idx)
-        Training_periode_days_hours_idx = reshape(Training_period_idx, (24, days_in_training_modified))
-        print(Training_period_idx)
-
-    end
 
     ##################################
     #######  OUTPUT FOR MODEL  #######
