@@ -14,6 +14,10 @@ function data_import_real(data_import, Data_index, test_day, Bid_Results)
     FD1_down_price = df_test[:, "FD1_down"]
     FD2_up_price = df_test[:, "FD2_up"]
     FD2_down_price = df_test[:, "FD2_down"]
+    FD1_down_percentage = df_test[:, "FD1_down_percentage"]
+    FD2_down_percentage = df_test[:,"FD2_down_percentage"]
+    FD1_up_percentage   = df_test[:, "FD1_up_percentage"]
+    FD2_up_percentage   = df_test[:, "FD2_up_percentage"]
 
     FD1_up_bid_price = Bid_Results["f_lambda_FD1_up"]
     FD1_down_bid_price = Bid_Results["f_lambda_FD1_dn"]
@@ -21,10 +25,34 @@ function data_import_real(data_import, Data_index, test_day, Bid_Results)
     FD2_down_bid_price = Bid_Results["f_lambda_FD2_dn"]
 
     #Construct acceptance
-    acceptance_FD1_up = [FD1_up_bid_price[i] <= FD1_up_price[i] ? 1 : 0 for i in 1:24]
-    acceptance_FD1_down = [FD1_down_bid_price[i] <= FD1_down_price[i] ? 1 : 0 for i in 1:24]
-    acceptance_FD2_up = [FD2_up_bid_price[i] <= FD2_up_price[i] ? 1 : 0 for i in 1:24]
-    acceptance_FD2_down = [FD2_down_bid_price[i] <= FD2_down_price[i] ? 1 : 0 for i in 1:24]
+    # The acceptance is a function of whether the bid is equal or below the true price. OR whether there are even bought volumes in the market. 
+    acceptance_FD1_up   = zeros((24))
+    acceptance_FD1_down = zeros((24))
+    acceptance_FD2_up   = zeros((24))
+    acceptance_FD2_down = zeros((24))
+    
+    for i in 1:24
+        if FD1_up_percentage[i] > 0 && FD1_up_bid_price[i] <= FD1_up_price[i]
+            acceptance_FD1_up[i] = 1      
+        end
+        
+        if FD1_down_percentage[i] > 0 && FD1_down_bid_price[i] <= FD1_down_price[i]
+            acceptance_FD1_down[i] = 1      
+        end
+
+        if FD2_down_percentage[i] > 0 && FD2_down_bid_price[i] <= FD2_down_price[i]
+            acceptance_FD2_down[i] = 1      
+        end
+
+        if FD2_up_percentage[i] > 0 && FD2_up_bid_price[i] <= FD2_up_price[i]
+            acceptance_FD2_up[i] = 1      
+        end
+    end
+
+    #acceptance_FD1_up = [FD1_up_bid_price[i] <= FD1_up_price[i] ? 1 : 0 for i in 1:24]
+    #acceptance_FD1_down = [FD1_down_bid_price[i] <= FD1_down_price[i] ? 1 : 0 for i in 1:24]
+    #acceptance_FD2_up = [FD2_up_bid_price[i] <= FD2_up_price[i] ? 1 : 0 for i in 1:24]
+    #acceptance_FD2_down = [FD2_down_bid_price[i] <= FD2_down_price[i] ? 1 : 0 for i in 1:24]
 
     DA_up_bid = Bid_Results["b_DA_up"]
     DA_down_bid = Bid_Results["b_DA_dn"]

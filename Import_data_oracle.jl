@@ -26,6 +26,36 @@ function data_import_Oracle(data_import, Data_index, test_day)
     FD2_up_price = df_test[:, "FD2_up"]
     FD2_down_price = df_test[:, "FD2_down"]
 
+    
+    FD1_down_percentage = ones((24)) # Accepted in accordance to the volume in the market
+    FD2_down_percentage = ones((24))
+    FD1_up_percentage   = ones((24))
+    FD2_up_percentage   = ones((24))
+    # ALWAYS ACCEPTED, IF THERE EXIST PROCUMENT IN THE MARKET
+    for i in 1:24
+        if df_test[i, "FD1_down_percentage"] <= 0 
+            FD1_down_percentage[i] = 0     
+        end
+        
+        if df_test[i, "FD2_down_percentage"] <= 0
+            FD2_down_percentage[i] = 0      
+        end
+
+        if df_test[i, "FD1_up_percentage"] <= 0 
+            FD1_up_percentage[i] = 0      
+        end
+
+        if df_test[i, "FD2_up_percentage"] <= 0 
+            FD2_up_percentage[i] = 0      
+        end
+    end
+
+
+    #FD1_down_percentage = repeat([1], 24) # Always accepted
+    #FD2_down_percentage = repeat([1], 24)
+    #FD1_up_percentage   = repeat([1], 24)
+    #FD2_up_percentage   = repeat([1], 24)
+
     #Export for a selected forecast/test day
     Data = Dict("Time" => [i for i in 1:24], 
                 "f_DA_t" => DA_price_real, 
@@ -35,10 +65,10 @@ function data_import_Oracle(data_import, Data_index, test_day)
                 "f_FD2_dn_t" => FD2_down_price,
                 "f_a_up_t" => FD_act_up_real, 
                 "f_a_dn_t" => FD_act_down_real, 
-                "f_FD1_y_up_t" => repeat([1], 24), #Always accepted
-                "f_FD1_y_dn_t" => repeat([1], 24), #Always accepted
-                "f_FD2_y_up_t" => repeat([1], 24), #Always accepted
-                "f_FD2_y_dn_t" => repeat([1], 24), #Always accepted
+                "f_FD1_y_up_t" => FD1_down_percentage,
+                "f_FD1_y_dn_t" => FD2_down_percentage,
+                "f_FD2_y_up_t" => FD1_up_percentage,
+                "f_FD2_y_dn_t" => FD2_up_percentage,
                 #Battery constraints 
                 "SOC_0" => SOC_0, 
                 "SOC_max" => SOC_max, 
