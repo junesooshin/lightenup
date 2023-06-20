@@ -9,14 +9,14 @@ include("Import_data_rule.jl")
 include("Import_data_det.jl")
 include("Import_data_oracle.jl")
 include("Import_data_sto.jl")
-include("Import_data_learn.jl")
+include("Import_data_feature.jl")
 include("Import_data_real.jl")
 
 #Model functions
 include("Model_Rule_based.jl")
 include("Model_Deterministic.jl")
 include("Model_Stochastic.jl")
-include("Model_Learning.jl")
+include("Model_Feature.jl")
 include("Model_Realtime.jl")
 
 #Functions to run models
@@ -91,8 +91,8 @@ function run_sto(processed_data, forecast_data, d_train_set, moving_day, size_W1
     return result_sto
 end
 
-function run_learn(processed_data, forecast_data, forgettingFactor_data, d_train_set, moving_day, test_day_2023, scaling)
-    #Learning Model
+function run_feature(processed_data, forecast_data, forgettingFactor_data, d_train_set, moving_day, test_day_2023, scaling)
+    #Feature Model
 
     Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
 
@@ -100,21 +100,21 @@ function run_learn(processed_data, forecast_data, forgettingFactor_data, d_train
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
     #Feature_Selection = ["Spot","FD1_down","FD2_down","FD1_up","FD2_up","Spot^2","Spot FD1_down","Spot FD2_down","Spot FD1_up","Spot FD2_up","FD1_down^2","FD1_down FD2_down","FD1_down FD1_up","FD1_down FD2_up","FD2_down^2","FD2_down FD1_up","FD2_down FD2_up","FD1_up^2","FD1_up FD2_up","FD2_up^2"]
     
-    data_learn = data_import_Learning(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling,"With forecast in input")
+    data_feature = data_import_Feature(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling,"With forecast in input")
     
     Architecture = "GA" # General or Hourly architecture of the coefficients
-    learn_solution = Training_Learning_Model(data_learn, Data_index, Architecture)
+    feature_solution = Feature_Model(data_feature, Data_index, Architecture)
     
-    Bid_Results_learn = Create_bid_Learning(data_learn, learn_solution)
+    Bid_Results_feature = Create_bid_Feature(data_feature, feature_solution)
 
-    #Test learning model real-time
-    data_real_learn = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_learn)
+    #Test Feature model real-time
+    data_real_feature = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_feature)
     
-    RT_results_learn = RT_operation(data_real_learn)
+    RT_results_feature = RT_operation(data_real_feature)
 
-    result_learn = Dict("Bid" => Bid_Results_learn, "RT" => RT_results_learn)
+    result_feature = Dict("Bid" => Bid_Results_feature, "RT" => RT_results_feature)
 
-    return result_learn
+    return result_feature
 end
 
 function run_all(Models_range, d_train_set_range, moving_day_range,forecast_range, out_of_sample, scaling, save_all)
@@ -198,16 +198,16 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                         Exp_sto_revenue = 0
                     end
 
-                    if issubset(["learn"],Models_range)  == true
-                        result_learn = run_learn(processed_data, forecast_data, forgettingFactor_data , d_train_set, moving_day, test_day_2023, scaling)
-                        RT_learn_revenue = result_learn["RT"]["revenue"]
-                        Exp_learn_revenue = sum(result_learn["Bid"]["obj_t"])
+                    if issubset(["feature"],Models_range)  == true
+                        result_feature = run_feature(processed_data, forecast_data, forgettingFactor_data , d_train_set, moving_day, test_day_2023, scaling)
+                        RT_feature_revenue = result_feature["RT"]["revenue"]
+                        Exp_feature_revenue = sum(result_feature["Bid"]["obj_t"])
                         if save_all == true
-                            save_dict(result_learn, "learn_$(id)")
+                            save_dict(result_feature, "feature_$(id)")
                         end     
                     else
-                        RT_learn_revenue = 0
-                        Exp_learn_revenue = 0                
+                        RT_feature_revenue = 0
+                        Exp_feature_revenue = 0                
                     end
 
                     
@@ -216,12 +216,12 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                                         "det" => RT_det_revenue,
                                         "oracle" => RT_oracle_revenue,
                                         "sto" => RT_sto_revenue,
-                                        "learn" => RT_learn_revenue)
+                                        "feature" => RT_feature_revenue)
                     Exp_revenue[id] = Dict("rule" => Exp_rule_revenue,
                                         "det" => Exp_det_revenue,
                                         "oracle" => Exp_oracle_revenue,
                                         "sto" => Exp_sto_revenue,
-                                        "learn" => Exp_learn_revenue)
+                                        "feature" => Exp_feature_revenue)
 
                     @info("Finished running id: $(id)")
                 end
@@ -242,19 +242,19 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
 end
 
 #Models_range = ["sto"]
-Models_range = ["rule","det","oracle","sto","learn"]
+Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
-#d_train_set_range = [5]
-d_train_set_range = [2,4,5,7,9,11]
+d_train_set_range = [5]
+#d_train_set_range = [2,4,5,7,9,11]
 #d_train_set_range = 1:10 #Set one value for one test case 
-#moving_day_range = 19 #(within range 0:87)
-moving_day_range = 0:87 #(within range 0:87)
+moving_day_range = 62 #(within range 0:87)
+#moving_day_range = 0:87 #(within range 0:87)
 #forecast_range = ["forecast_all1"]
 #forecast_range = ["forecast_real","forecast_all1", "forecast_all2", "forecast_all3", "forecast_all4", "forecast_all5", "forecast_all6"]
 forecast_range = ["forecast_real","forecast_all1", "forecast_all6"]
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
-scaling = true #true/false (for learning)
+scaling = true #true/false (for Feature)
 save_all = true #true/false (for saving individual results)
 
 RT_revenue, Exp_revenue = run_all(Models_range,d_train_set_range, moving_day_range,forecast_range, out_of_sample, scaling, save_all)

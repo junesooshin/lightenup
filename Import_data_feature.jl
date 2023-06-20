@@ -1,6 +1,6 @@
-#data import functions for learning model
+#data import functions for Feature model
 
-function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling, Model_configuration = "Without forecast in learning")
+function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling, Model_configuration = "Without forecast in input")
 
     N_train_flat = Data_index["N_train_flat"]
     D_train = Data_index["D_train"]
@@ -42,7 +42,7 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
 
 
 
-    # The acceptance in the learning model is just the difference in volume between D-1 and D-2 for up and down
+    # The acceptance in the Feature model is just the difference in volume between D-1 and D-2 for up and down
     # Not scaled since they are already percentages
     f_FD1_y_up_t = reshape(Data_all[N_train_flat,"FD1_up_percentage"], (length(H), n_train_days) )   
     f_FD2_y_up_t = reshape(Data_all[N_train_flat,"FD2_up_percentage"], (length(H), n_train_days) )    
@@ -70,14 +70,14 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     f_a_up_t   = reshape(forecast_data[N_forecast_flat,"FD_act_up"], (length(H), 1) ) 
     f_a_dn_t   = reshape(forecast_data[N_forecast_flat,"FD_act_down"], (length(H), 1) ) 
     f_FD1_down_percentage = reshape(forecast_data[N_forecast_flat,"FD1_up_percentage"], (length(H), 1) )   
-    f_FD2_down_percentage = reshape(forecast_data[N_forecast_flat,"FD2_up_percentage"], (length(H), 1) )    
+    f_FD2_up_percentage = reshape(forecast_data[N_forecast_flat,"FD2_up_percentage"], (length(H), 1) )    
     f_FD1_up_percentage = reshape(forecast_data[N_forecast_flat,"FD1_down_percentage"], (length(H), 1) )  
-    f_FD1_up_percentage = reshape(forecast_data[N_forecast_flat,"FD2_down_percentage"], (length(H), 1) ) 
+    f_FD2_down_percentage = reshape(forecast_data[N_forecast_flat,"FD2_down_percentage"], (length(H), 1) ) 
 
 
 
-    # Modify training if forecast is included in training for Learning models
-    if Model_configuration == "With forecast in learning"
+    # Modify training if forecast is included in training for Feature models
+    if Model_configuration == "With forecast in input"
 
         n_train_days = n_train_days + 1
 
@@ -135,7 +135,7 @@ function data_import_Learning(Data_all, forecast_data, forgettingFactor_data, Da
     "forgettingFactor" => forgetting 
     )
     
-    @info("Data import for learning model complete!")
+    @info("Data import for feature model complete!")
     return Data
 end
 
