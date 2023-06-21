@@ -60,8 +60,8 @@ function RT_operation(Data)
     C_Deg_t = (p_all_up + p_all_dn)./(2*SOC_max) .* Cost_per_cycle
     penalty = penalty*sum(failure_up[t] + failure_dn[t] for t in T)
     penalty_t = penalty.*(failure_up + failure_dn) 
-    revenue = R_FD2 + R_DA + R_FD1 - C_Deg - penalty
-    revenue_t = R_FD2_t + R_DA_t + R_FD1_t - C_Deg_t - penalty_t
+    profit = R_FD2 + R_DA + R_FD1 - C_Deg - penalty
+    profit_t = R_FD2_t + R_DA_t + R_FD1_t - C_Deg_t - penalty_t
 
     RT_results = Dict(#Results from RT operation
                       "p_dis_max" => p_dis_max,
@@ -81,8 +81,8 @@ function RT_operation(Data)
                       "C_Deg_t" => C_Deg_t,
                       "penalty" => penalty,
                       "penalty_t" => penalty_t,
-                      "revenue" => revenue,
-                      "revenue_t" => revenue_t,
+                      "profit" => profit,
+                      "profit_t" => profit_t,
                       #Real activation
                       "FD_a_up_t" => FD_a_up_t,
                       "FD_a_dn_t" => FD_a_dn_t,

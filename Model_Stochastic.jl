@@ -58,7 +58,7 @@ function stochastic_model(Data)
     @variable(m_sto, p_all_up[T,W1,W2,W3] >= 0)           
     @variable(m_sto, SOC[T,W1,W2,W3] >= 0)                 
 
-    #Stage independent variable (revenues and costs at each stage)
+    #Stage independent variable (profits and costs at each stage)
     @variable(m_sto, G_FD2[t in T] >= 0)
     @variable(m_sto, G_DA[t in T] >= 0)                      
     @variable(m_sto, G_FD1[t in T] >= 0)             
@@ -176,7 +176,7 @@ function create_bid_stochastic(Data, sto_solution)
     f_lambda_FD1_up = Data["f_FD1_up_t"][:,1] #Flatten array
     f_lambda_FD1_dn = Data["f_FD1_dn_t"][:,1] #Flatten array
 
-    #Calculate expected revenue
+    #Calculate expected profit
     G_FD2_t = f_lambda_FD2_up.*p_FD2_up .+ f_lambda_FD2_dn.*p_FD2_dn 
     G_FD1_t = f_lambda_FD1_up.*p_FD1_up .+ f_lambda_FD1_dn.*p_FD1_dn 
     G_DA_t = f_DA_t.*(b_DA_up .- b_DA_dn) 

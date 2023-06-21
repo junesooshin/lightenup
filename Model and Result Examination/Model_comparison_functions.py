@@ -43,11 +43,11 @@ def json_to_df(json_file_path, orient='columns'):
     df = pd.DataFrame.from_dict(data_dict, orient=orient) # Transform to dataframe. 
     return df
 
-def Create_Array_from_Rev(df_Exp_rev,df_RT_rev,SampleSizes, NumForecasts):
+def Create_Array_from_Profit(df_Exp_profit,df_RT_profit,SampleSizes, NumForecasts):
     # Initialize a numpy array of size (number of different forecast accuracies,number of different train sizes, test days, models, result) with empty values
     Array = np.empty((NumForecasts, len(SampleSizes), 88, 5, 2))
 
-    for col in df_Exp_rev.columns:
+    for col in df_Exp_profit.columns:
         
         # Create a four dimensional 
 
@@ -73,17 +73,17 @@ def Create_Array_from_Rev(df_Exp_rev,df_RT_rev,SampleSizes, NumForecasts):
 
 
 
-        Array[(f-1),(m),(d-1),0,0] = df_Exp_rev[col]['rule']
-        Array[(f-1),(m),(d-1),1,0] = df_Exp_rev[col]['det']
-        Array[(f-1),(m),(d-1),2,0] = df_Exp_rev[col]['sto']
-        Array[(f-1),(m),(d-1),3,0] = df_Exp_rev[col]['learn']
-        Array[(f-1),(m),(d-1),4,0] = df_Exp_rev[col]['oracle']
+        Array[(f-1),(m),(d-1),0,0] = df_Exp_profit[col]['rule']
+        Array[(f-1),(m),(d-1),1,0] = df_Exp_profit[col]['det']
+        Array[(f-1),(m),(d-1),2,0] = df_Exp_profit[col]['sto']
+        Array[(f-1),(m),(d-1),3,0] = df_Exp_profit[col]['feature']
+        Array[(f-1),(m),(d-1),4,0] = df_Exp_profit[col]['oracle']
 
-        Array[(f-1),(m),(d-1),0,1] = df_RT_rev[col]['rule']
-        Array[(f-1),(m),(d-1),1,1] = df_RT_rev[col]['det']
-        Array[(f-1),(m),(d-1),2,1] = df_RT_rev[col]['sto']
-        Array[(f-1),(m),(d-1),3,1] = df_RT_rev[col]['learn']
-        Array[(f-1),(m),(d-1),4,1] = df_RT_rev[col]['oracle']
+        Array[(f-1),(m),(d-1),0,1] = df_RT_profit[col]['rule']
+        Array[(f-1),(m),(d-1),1,1] = df_RT_profit[col]['det']
+        Array[(f-1),(m),(d-1),2,1] = df_RT_profit[col]['sto']
+        Array[(f-1),(m),(d-1),3,1] = df_RT_profit[col]['feature']
+        Array[(f-1),(m),(d-1),4,1] = df_RT_profit[col]['oracle']
         
     return Array
 
@@ -102,7 +102,7 @@ def Count_performance_for_each_model(Array,includeOracle = False):
         noOracle = 5
 
     model_order = ['rule','det','sto','feature','oracle']
-    rev_type_order = ['Expected','RT']
+    profit_type_order = ['Expected','RT']
     Array_to_use = Array[:,:,:,0:noOracle,:]
 
     argmax_result = np.argmax(Array_to_use, axis=3)
@@ -110,25 +110,25 @@ def Count_performance_for_each_model(Array,includeOracle = False):
     CountArray = np.zeros((Array.shape[0],Array.shape[1],Array.shape[4],noOracle), dtype=int)  # Initialize the counts matrix
     for f in range(Array.shape[0]): # Forecast
         for sample_n in range(Array.shape[1]): # Sample length
-            for rev in range(Array.shape[4]): # Expected / real rev
-                CountArray[f,sample_n,rev,:] =np.bincount(argmax_result[f,sample_n,:,rev],minlength=noOracle)
+            for profit in range(Array.shape[4]): # Expected / real profit
+                CountArray[f,sample_n,profit,:] =np.bincount(argmax_result[f,sample_n,:,profit],minlength=noOracle)
 
-    # CountArray has dim (f, sample_len, rev_type, model_type)
-    return CountArray, model_order,rev_type_order
-
-
+    # CountArray has dim (f, sample_len, profit_type, model_type)
+    return CountArray, model_order,profit_type_order
 
 
 
-def plot_Revenue_Test(Array, xtick_names, marker_size = 2, marker_size_2 = 20, visualize_forecasts = False ):
-    # Assuming Array[f, m,d,model,rev] is the four-dimensional array
+
+
+def plot_Profit_Test(Array, xtick_names, marker_size = 2, marker_size_2 = 20, visualize_forecasts = False ):
+    # Assuming Array[f, m,d,model,profit] is the four-dimensional array
     if visualize_forecasts == False:
         Array = Array[0,:,:,:,:]
         iteration_numbers = Array.shape[0]
         x_length = Array.shape[0]
         xlabel_name = 'Training Sample'
-        ax1_name = 'Revenue for different training sizes and at different test days'
-        ax2_name = 'Mean revenue for different training sizes'
+        ax1_name = 'Profit for different training sizes and at different test days'
+        ax2_name = 'Mean profit for different training sizes'
         xtick_range = range(0, x_length)
 
     elif visualize_forecasts == True:
@@ -136,8 +136,8 @@ def plot_Revenue_Test(Array, xtick_names, marker_size = 2, marker_size_2 = 20, v
         iteration_numbers = Array.shape[0]
         x_length = Array.shape[0]
         xlabel_name = 'Forecasts'
-        ax1_name = 'Revenue for different forecasts and at different test days'
-        ax2_name = 'Mean revenue for different forecasts'
+        ax1_name = 'Profit for different forecasts and at different test days'
+        ax2_name = 'Mean profit for different forecasts'
         xtick_range = range(0, x_length)
         
     # Set up the plot
@@ -146,13 +146,13 @@ def plot_Revenue_Test(Array, xtick_names, marker_size = 2, marker_size_2 = 20, v
 
     # Define a list of colors for models
     colors = ['red' , 'blue', 'green', 'orange','purple']
-    Model  = ['Rule', 'Det' , 'Sto'  , 'Learn' ,'oracle']
+    Model  = ['Rule', 'Det' , 'Sto'  , 'Feature' ,'oracle']
 
-    # Define a list of symbols for revs
+    # Define a list of symbols for profits
     symbols = ['o'  , 's' ]
-    Rev     = ['Exp', 'RT']
+    Profit     = ['Exp', 'RT']
 
-    # Define a list of x-axis movement for each rev
+    # Define a list of x-axis movement for each profit
     xaxis_move = [-0.25,-0.2,-0.15,-0.1,-0.05, 0.05,0.1,0.15,0.2,0.25]
 
 
@@ -162,20 +162,20 @@ def plot_Revenue_Test(Array, xtick_names, marker_size = 2, marker_size_2 = 20, v
 
     # Iterate over d values
     for d in range(iteration_numbers):
-        # Iterate over rev values
+        # Iterate over profit values
         count = 0
-        for rev in range(len(Rev)):
+        for profit in range(len(Profit)):
             # Iterate over model values
             for model in range(len(Model)):
                 
 
-                data = Array[:, d, model, rev]
+                data = Array[:, d, model, profit]
 
-                # Get the unique color and symbol based on the model and rev
+                # Get the unique color and symbol based on the model and profit
                 color = colors[model]
-                symbol = symbols[rev]
+                symbol = symbols[profit]
 
-                # Calculate the modified x values based on the rev
+                # Calculate the modified x values based on the profit
                 
                 modified_x = list(range(x_length))  # Convert range object to a list
                 modified_x = [x + xaxis_move[count] for x in modified_x]
@@ -186,32 +186,32 @@ def plot_Revenue_Test(Array, xtick_names, marker_size = 2, marker_size_2 = 20, v
 
 
     # Set y-axis label
-    ax1.set_ylabel('Revenue [EUR]')
+    ax1.set_ylabel('Profit [EUR]')
 
     # Create a legend for colors and symbols
     legend_handles = []
     for model, color in enumerate(colors):
         legend_handles.append(Line2D([0], [0], marker='o', color='w', label=f'{Model[model]}', markerfacecolor=color, markersize=10))
-    for rev, symbol in enumerate(symbols):
-        legend_handles.append(Line2D([0], [0], marker=symbol, color='w', label=f'{Rev[rev]}', markerfacecolor='black', markersize=10))
+    for profit, symbol in enumerate(symbols):
+        legend_handles.append(Line2D([0], [0], marker=symbol, color='w', label=f'{Profit[profit]}', markerfacecolor='black', markersize=10))
 
     # Add the legend to the plot outside the graph area
     ax1.legend(handles=legend_handles, loc='upper right', bbox_to_anchor=(1.1, 0.7))
 
     # The other subplot
     count = 0
-    for rev in range(len(Rev)):
+    for profit in range(len(Profit)):
         # Iterate over model values
         for model in range(len(Model)):
 
-            # Extract the data for the current d, model, and rev
-            data = mean_array_along_d[:, 0, model, rev]
+            # Extract the data for the current d, model, and profit
+            data = mean_array_along_d[:, 0, model, profit]
 
-            # Get the unique color and symbol based on the model and rev
+            # Get the unique color and symbol based on the model and profit
             color = colors[model]
-            symbol = symbols[rev]
+            symbol = symbols[profit]
 
-            # Calculate the modified x values based on the rev
+            # Calculate the modified x values based on the profit
             modified_x = list(range(x_length))  # Convert range object to a list
             modified_x = [x + xaxis_move[count] for x in modified_x]
             count = count + 1  # For modified_x
@@ -222,7 +222,7 @@ def plot_Revenue_Test(Array, xtick_names, marker_size = 2, marker_size_2 = 20, v
 
 
     # Set y-axis label
-    ax2.set_ylabel('Revenue [EUR]')
+    ax2.set_ylabel('Profit [EUR]')
 
     # Set x-axis label
     ax2.set_xlabel(xlabel_name)
@@ -244,12 +244,12 @@ os.chdir(desktop_path+'\Thesis')
 Add_on_path = '\\Results\\f1_d5_GA\\Training d2-d11\\'
 Add_on_path = "\\Results\\Forecast_5_training_sample\\"
 current_directory = os.getcwd()  # Jupyter file take the current directory as where the jupyter file is located. Different than a .py file...
-df_Exp_rev = json_to_df(current_directory + Add_on_path +  'Exp_revenue.json')
-df_RT_rev = json_to_df(current_directory + Add_on_path + 'RT_revenue.json')
+df_Exp_profit = json_to_df(current_directory + Add_on_path +  'Exp_profit.json')
+df_RT_profit = json_to_df(current_directory + Add_on_path + 'RT_profit.json')
 
 SampleSizes = [5]
-Array = Create_Array_from_Rev(df_Exp_rev,df_RT_rev,NumForecasts=7, SampleSizes=SampleSizes)
-plot_Revenue_Test(Array,SampleSizes,visualize_forecasts = True)
+Array = Create_Array_from_Profit(df_Exp_profit,df_RT_profit,NumForecasts=7, SampleSizes=SampleSizes)
+plot_Profit_Test(Array,SampleSizes,visualize_forecasts = True)
 '''
 
 def import_test_case(current_directory, Add_on_path, choose_id):
@@ -258,8 +258,8 @@ def import_test_case(current_directory, Add_on_path, choose_id):
         Results_oracle = json.load(results_oracle_json)
     with open(current_directory + Add_on_path + f'/det_{choose_id}.json') as results_det_json:
         Results_det = json.load(results_det_json)
-    with open(current_directory + Add_on_path + f'/learn_{choose_id}.json') as results_learn_json:
-        Results_learn = json.load(results_learn_json)
+    with open(current_directory + Add_on_path + f'/feature_{choose_id}.json') as results_feature_json:
+        Results_feature = json.load(results_feature_json)
     with open(current_directory + Add_on_path + f'/sto_{choose_id}.json') as results_sto_json:
         Results_sto = json.load(results_sto_json)
     with open(current_directory + Add_on_path + f'/rule_{choose_id}.json') as results_rule_json:
@@ -270,8 +270,8 @@ def import_test_case(current_directory, Add_on_path, choose_id):
     oracle_RT = {}
     det_bid = {}
     det_RT = {}
-    learn_bid = {}
-    learn_RT = {}
+    feature_bid = {}
+    feature_RT = {}
     sto_bid = {}
     sto_RT = {}
     rule_bid = {}
@@ -287,10 +287,10 @@ def import_test_case(current_directory, Add_on_path, choose_id):
     for key, value in Results_det['RT'].items():
         det_RT[key] = np.array(value)
 
-    for key, value in Results_learn['Bid'].items():
-        learn_bid[key] = np.array(value)
-    for key, value in Results_learn['RT'].items():
-        learn_RT[key] = np.array(value)
+    for key, value in Results_feature['Bid'].items():
+        feature_bid[key] = np.array(value)
+    for key, value in Results_feature['RT'].items():
+        feature_RT[key] = np.array(value)
 
     for key, value in Results_sto['Bid'].items():
         sto_bid[key] = np.array(value)
@@ -305,7 +305,7 @@ def import_test_case(current_directory, Add_on_path, choose_id):
     results = {'Oracle': {'Bid': oracle_bid, 'RT': oracle_RT},
                'Det': {'Bid':det_bid, 'RT':det_RT}, 
                'Rule': {'Bid':rule_bid, 'RT':rule_RT}, 
-               'Learn': {'Bid':learn_bid, 'RT':learn_RT}, 
+               'Feature': {'Bid':feature_bid, 'RT':feature_RT}, 
                'Sto': {'Bid':sto_bid, 'RT':sto_RT}}
     return results
 
@@ -392,7 +392,7 @@ def plot_training_price(with_acceptance, bid_result, model, color, save):
         ax2.plot(x, bid_result['f_lambda_FD1_dn'], label='f_FD1_dn', marker='.', color=color['FD1_dn'])
         ax2.set_ylabel('Price used for training [EUR/MW]', fontsize=12)  
 
-    elif 'Learn' in model: # This only plots training data for now, the bid price is equal to the forecast price
+    elif 'Feature' in model: # This only plots training data for now, the bid price is equal to the forecast price
         X_train_spot = np.array(bid_result["X"])[0,:,:].T
         X_train_FD1_dn = np.array(bid_result["X"])[1,:,:].T
         X_train_FD2_dn = np.array(bid_result["X"])[2,:,:].T
@@ -567,15 +567,15 @@ def plot_accepted_price(data_RT_input, model, save):
 
     fig.suptitle(model, fontsize=12) #Remove this for overleaf export
 
-def plot_coefficients(learn_bid, color, save):
+def plot_coefficients(feature_bid, color, save):
     # Plot coefficients
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up", "1"]
-    q_FD2_up = learn_bid["q_FD2_up"]
-    q_FD2_dn = learn_bid["q_FD2_dn"]
-    q_FD1_up = learn_bid["q_FD1_up"]
-    q_FD1_dn = learn_bid["q_FD1_dn"]
-    q_DA_up = learn_bid["q_DA_up"]
-    q_DA_dn = learn_bid["q_DA_dn"]
+    q_FD2_up = feature_bid["q_FD2_up"]
+    q_FD2_dn = feature_bid["q_FD2_dn"]
+    q_FD1_up = feature_bid["q_FD1_up"]
+    q_FD1_dn = feature_bid["q_FD1_dn"]
+    q_DA_up = feature_bid["q_DA_up"]
+    q_DA_dn = feature_bid["q_DA_dn"]
 
     fig, ax4 = plt.subplots(figsize=(7,5))
 
@@ -595,48 +595,48 @@ def plot_coefficients(learn_bid, color, save):
 
     # plt.show()
 
-def plot_exp_and_RT_revenue(results, rev_plot, save):
-    # Plot RT and expected revenue
+def plot_exp_and_RT_profit(results, profit_plot, save):
+    # Plot RT and expected profit
     fig, ax6 = plt.subplots(figsize=(7,5))
     x = np.arange(1,25)
 
-    if 'Det' in rev_plot:
-        ax6.plot(x, results['Det']['RT']['revenue_t'], label='Det_RT', marker = '.', color='C0') 
+    if 'Det' in profit_plot:
+        ax6.plot(x, results['Det']['RT']['profit_t'], label='Det_RT', marker = '.', color='C0') 
         ax6.plot(x, results['Det']['Bid']['obj_t'], label='Det_Exp', linestyle='dashed', color='C0') 
-    elif 'Sto' in rev_plot:
-        ax6.plot(x, results['Sto']['RT']['revenue_t'], label='Sto_RT', marker = '.', color='C1') 
+    elif 'Sto' in profit_plot:
+        ax6.plot(x, results['Sto']['RT']['profit_t'], label='Sto_RT', marker = '.', color='C1') 
         ax6.plot(x, results['Sto']['Bid']['obj_t'], label='Sto_Exp', linestyle='dashed', color='C1') 
-    elif 'Learn' in rev_plot:
-        ax6.plot(x, results['Learn']['RT']['revenue_t'], label='Learn_RT', marker = '.', color='C2') 
-        ax6.plot(x, results['Learn']['Bid']['obj_t'].flatten(), label='Learn_Exp', linestyle='dashed', color='C2') 
-    elif 'Rule' in rev_plot:
-        ax6.plot(x, results['Rule']['RT']['revenue_t'], label='Rule_RT', marker = '.', color='C3') 
+    elif 'Feature' in profit_plot:
+        ax6.plot(x, results['Feature']['RT']['profit_t'], label='Feature_RT', marker = '.', color='C2') 
+        ax6.plot(x, results['Feature']['Bid']['obj_t'].flatten(), label='Feature_Exp', linestyle='dashed', color='C2') 
+    elif 'Rule' in profit_plot:
+        ax6.plot(x, results['Rule']['RT']['profit_t'], label='Rule_RT', marker = '.', color='C3') 
         ax6.plot(x, results['Rule']['Bid']['obj_t'], label='Rule_Exp', linestyle='dashed', color='C3') 
-    elif 'Oracle' in rev_plot:
-        ax6.plot(x, results['Oracle']['RT']['revenue_t'], label='Rule_RT', marker = '.', color='C4') 
+    elif 'Oracle' in profit_plot:
+        ax6.plot(x, results['Oracle']['RT']['profit_t'], label='Rule_RT', marker = '.', color='C4') 
         ax6.plot(x, results['Oracle']['Bid']['obj_t'], label='Rule_Exp', linestyle='dashed', color='C4') 
-    elif 'all' in rev_plot:
-        ax6.plot(x, results['Det']['RT']['revenue_t'], label='Det_RT', marker = '.', color='C0') 
+    elif 'all' in profit_plot:
+        ax6.plot(x, results['Det']['RT']['profit_t'], label='Det_RT', marker = '.', color='C0') 
         ax6.plot(x, results['Det']['Bid']['obj_t'], label='Det_Exp', linestyle='dashed', color='C0') 
-        ax6.plot(x, results['Sto']['RT']['revenue_t'], label='Sto_RT', marker = '.', color='C1') 
+        ax6.plot(x, results['Sto']['RT']['profit_t'], label='Sto_RT', marker = '.', color='C1') 
         ax6.plot(x, results['Sto']['Bid']['obj_t'], label='Sto_Exp', linestyle='dashed', color='C1') 
-        ax6.plot(x, results['Learn']['RT']['revenue_t'], label='Learn_RT', marker = '.', color='C2') 
-        ax6.plot(x, results['Learn']['Bid']['obj_t'].flatten(), label='Learn_Exp', linestyle='dashed', color='C2') 
-        ax6.plot(x, results['Rule']['RT']['revenue_t'], label='Rule_RT', marker = '.', color='C3') 
+        ax6.plot(x, results['Feature']['RT']['profit_t'], label='Feature_RT', marker = '.', color='C2') 
+        ax6.plot(x, results['Feature']['Bid']['obj_t'].flatten(), label='Feature_Exp', linestyle='dashed', color='C2') 
+        ax6.plot(x, results['Rule']['RT']['profit_t'], label='Rule_RT', marker = '.', color='C3') 
         ax6.plot(x, results['Rule']['Bid']['obj_t'], label='Rule_Exp', linestyle='dashed', color='C3') 
-        ax6.plot(x, results['Oracle']['RT']['revenue_t'], label='Rule_RT', marker = '.', color='C4') 
+        ax6.plot(x, results['Oracle']['RT']['profit_t'], label='Rule_RT', marker = '.', color='C4') 
         ax6.plot(x, results['Oracle']['Bid']['obj_t'], label='Rule_Exp', linestyle='dashed', color='C4') 
 
-    ax6.set_ylabel('Revenue [EUR]', fontsize=12)
+    ax6.set_ylabel('Profit [EUR]', fontsize=12)
     ax6.set_xlabel('Hours', fontsize=12)
     ax6.set_xticks([1,6,12,18,24])
-    if 'all' in rev_plot:
+    if 'all' in profit_plot:
         ax6.legend(loc='upper left', bbox_to_anchor=(-0.05, -0.15), ncol=4, fontsize=12)
     else:
         ax6.legend(loc='upper left', bbox_to_anchor=(0.15, -0.15), ncol=2, fontsize=12)
 
     if save == True:
-        plt.savefig(f'Result_plots/exp_and_RT_revenue_{rev_plot}.png', bbox_inches='tight')
+        plt.savefig(f'Result_plots/exp_and_RT_profit_{profit_plot}.png', bbox_inches='tight')
     # plt.show()
 
 def plot_battery_dynamics(RT_result, model, save):
@@ -673,7 +673,7 @@ def plot_battery_dynamics(RT_result, model, save):
 
     # plt.show()
 
-def save_plots(current_directory,Add_on_path, choose_id, save, model, with_acceptance, rev_plot):
+def save_plots(current_directory,Add_on_path, choose_id, save, model, with_acceptance, profit_plot):
     #Fix color schemes
     color = {'FD2_up': '#FFA500', # orange
             'FD2_dn': '#2986cc', # blue
@@ -690,34 +690,34 @@ def save_plots(current_directory,Add_on_path, choose_id, save, model, with_accep
     plot_training_price(with_acceptance, results[model]['Bid'], model, color, save)
     plot_bidding_price(results[model]['Bid'], model, color, save)
     plot_accepted_price(results[model]['RT'], model, save)
-    if 'Learn' in model:
+    if 'Feature' in model:
         plot_coefficients(results[model]['Bid'], color, save)
-    plot_exp_and_RT_revenue(results, rev_plot, save)
+    plot_exp_and_RT_profit(results, profit_plot, save)
     plot_battery_dynamics(results[model]['RT'], model, save)
     
     #Print summary
     print('Test case: ', choose_id)
-    result_summary = [["RT", results['Oracle']['RT']['revenue'],results['Rule']['RT']['revenue'], results['Det']['RT']['revenue'], results['Sto']['RT']['revenue'], results['Learn']['RT']['revenue']],
-                      ["Expected", sum(results['Oracle']['Bid']['obj_t']),sum(results['Rule']['Bid']['obj_t']), sum(results['Det']['Bid']['obj_t']), sum(results['Sto']['Bid']['obj_t'].flatten()), sum(results['Learn']['Bid']['obj_t'].flatten())]]
-    headers = ["Oracle","Rule", "Deterministic", "Stochastic", "Learning"]
+    result_summary = [["RT", results['Oracle']['RT']['profit'],results['Rule']['RT']['profit'], results['Det']['RT']['profit'], results['Sto']['RT']['profit'], results['Feature']['RT']['profit']],
+                      ["Expected", sum(results['Oracle']['Bid']['obj_t']),sum(results['Rule']['Bid']['obj_t']), sum(results['Det']['Bid']['obj_t']), sum(results['Sto']['Bid']['obj_t'].flatten()), sum(results['Feature']['Bid']['obj_t'].flatten())]]
+    headers = ["Oracle","Rule", "Deterministic", "Stochastic", "Feature"]
     table = tabulate(result_summary, headers, tablefmt="grid")
     print(table)
 
     return results
 
-def view_plots(model, rev_plot):
+def view_plots(model, profit_plot):
     # Select plots
     image_paths = [f'Result_plots/bid_plots_{model}.png', 
                 f'Result_plots/training_price_{model}.png', 
                 f'Result_plots/bidding_price_{model}.png',
-                f'Result_plots/exp_and_RT_revenue_{rev_plot}.png',
+                f'Result_plots/exp_and_RT_profit_{profit_plot}.png',
                 f'Result_plots/battery_dynamics_{model}.png']
-    if 'Learn' in model:
+    if 'Feature' in model:
         image_paths.append(f'Result_plots/coefficients.png')
 
     fig, axes = plt.subplots(3, 2, figsize=(10, 10))
 
-    for i, ax in enumerate(axes.flatten() if 'Learn' in model else axes.flatten()[0:5]):
+    for i, ax in enumerate(axes.flatten() if 'Feature' in model else axes.flatten()[0:5]):
         image = Image.open(image_paths[i])
         ax.imshow(image)
         ax.axis("off")  # Remove the axis labels
@@ -733,16 +733,16 @@ def view_plots(model, rev_plot):
     plt.show()
 
 #Heat map of hourly coefficients
-def plot_coefficients_heatmap(learn_bid, save):
+def plot_coefficients_heatmap(feature_bid, save):
     # Plot coefficients
     x = np.arange(1,25)
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up", "1"]
-    q_FD2_up = learn_bid["q_FD2_up"]
-    q_FD2_dn = learn_bid["q_FD2_dn"]
-    q_FD1_up = learn_bid["q_FD1_up"]
-    q_FD1_dn = learn_bid["q_FD1_dn"]
-    q_DA_up = learn_bid["q_DA_up"]
-    q_DA_dn = learn_bid["q_DA_dn"]
+    q_FD2_up = feature_bid["q_FD2_up"]
+    q_FD2_dn = feature_bid["q_FD2_dn"]
+    q_FD1_up = feature_bid["q_FD1_up"]
+    q_FD1_dn = feature_bid["q_FD1_dn"]
+    q_DA_up = feature_bid["q_DA_up"]
+    q_DA_dn = feature_bid["q_DA_dn"]
 
 
     fig, ax = plt.subplots(6,1,figsize=(20,20))

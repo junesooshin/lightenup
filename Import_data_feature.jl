@@ -62,17 +62,17 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
     #########################            FORECASTED PRICES           ############################
 
     # ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
-    f_FD2_up_t = reshape(forecast_data[N_forecast_flat,"FD2_up"], (length(H), 1) ) 
-    f_FD2_dn_t = reshape(forecast_data[N_forecast_flat,"FD2_down"], (length(H), 1) ) 
-    f_FD1_up_t = reshape(forecast_data[N_forecast_flat,"FD1_up"], (length(H), 1) ) 
-    f_FD1_dn_t = reshape(forecast_data[N_forecast_flat,"FD1_down"], (length(H), 1) ) 
-    f_DA_t     = reshape(forecast_data[N_forecast_flat,"Spot"], (length(H), 1) ) 
-    f_a_up_t   = reshape(forecast_data[N_forecast_flat,"FD_act_up"], (length(H), 1) ) 
-    f_a_dn_t   = reshape(forecast_data[N_forecast_flat,"FD_act_down"], (length(H), 1) ) 
-    f_FD1_down_percentage = reshape(forecast_data[N_forecast_flat,"FD1_up_percentage"], (length(H), 1) )   
-    f_FD2_up_percentage = reshape(forecast_data[N_forecast_flat,"FD2_up_percentage"], (length(H), 1) )    
-    f_FD1_up_percentage = reshape(forecast_data[N_forecast_flat,"FD1_down_percentage"], (length(H), 1) )  
-    f_FD2_down_percentage = reshape(forecast_data[N_forecast_flat,"FD2_down_percentage"], (length(H), 1) ) 
+    f_FD2_up_t = reshape(forecast_data[N_forecast_flat,"FD2_up"], (length(H)) ) 
+    f_FD2_dn_t = reshape(forecast_data[N_forecast_flat,"FD2_down"], (length(H)) ) 
+    f_FD1_up_t = reshape(forecast_data[N_forecast_flat,"FD1_up"], (length(H)) ) 
+    f_FD1_dn_t = reshape(forecast_data[N_forecast_flat,"FD1_down"], (length(H)) ) 
+    f_DA_t     = reshape(forecast_data[N_forecast_flat,"Spot"], (length(H)) ) 
+    f_a_up_t   = reshape(forecast_data[N_forecast_flat,"FD_act_up"], (length(H)) ) 
+    f_a_dn_t   = reshape(forecast_data[N_forecast_flat,"FD_act_down"], (length(H)) ) 
+    f_FD1_down_percentage = reshape(forecast_data[N_forecast_flat,"FD1_up_percentage"], (length(H)) )   
+    f_FD2_up_percentage = reshape(forecast_data[N_forecast_flat,"FD2_up_percentage"], (length(H)) )    
+    f_FD1_up_percentage = reshape(forecast_data[N_forecast_flat,"FD1_down_percentage"], (length(H)) )  
+    f_FD2_down_percentage = reshape(forecast_data[N_forecast_flat,"FD2_down_percentage"], (length(H)) ) 
 
 
 
@@ -97,6 +97,8 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
         f_FD2_y_dn_t = cat(f_FD2_y_dn_t, f_FD2_down_percentage,dims=(2))
         f_FD1_y_up_t = cat(f_FD1_y_up_t, f_FD1_up_percentage,dims=(2))
         f_FD2_y_up_t = cat(f_FD2_y_up_t, f_FD2_up_percentage,dims=(2))
+        
+        @info("Forecast added to input for optimization of the Feature model!")
 
     end
 

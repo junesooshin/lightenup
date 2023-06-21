@@ -288,15 +288,12 @@ function Create_bid_Feature(Data, Results_from_training)
     b_FD1_up = sum(q_FD1_up[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD1_up[columnLength+1]
     b_FD1_dn = sum(q_FD1_dn[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD1_dn[columnLength+1]
 
-    # println(size(b_FD2_up))
-    # println(size(f_lambda_FD2_up))
-
     y_FD2_up =  mean(Data["f_FD2_y_up_t"], dims=2)
     y_FD2_dn =  mean(Data["f_FD2_y_dn_t"], dims=2)
     y_FD1_up =  mean(Data["f_FD1_y_up_t"], dims=2)
     y_FD1_dn =  mean(Data["f_FD1_y_dn_t"], dims=2)
 
-    #Calculate expected revenue
+    #Calculate expected profit
     G_DA_t = f_DA.*(b_DA_up .- b_DA_dn)
     G_FD2_t = f_lambda_FD2_up.*b_FD2_up.*y_FD2_up.+f_lambda_FD2_dn.*b_FD2_dn.*y_FD2_dn #Forecast price, trained acceptance, bid
     G_FD1_t = f_lambda_FD1_up.*b_FD1_up.*y_FD1_up.+f_lambda_FD1_dn.*b_FD1_dn.*y_FD1_dn #Forecast price, trained acceptance, bid

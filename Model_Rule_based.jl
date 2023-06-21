@@ -40,7 +40,6 @@ function baseline_model_DA_and_FCR_D(Data, Threshold_Max_coef, Threshold_Min_coe
     Threshold_Min = Threshold_Min_coef*minimum(Spot)
     
     # Initialize the first State of charge
-    #SOC[1] = Initialize_SOC_baseline_model(FCR_D_Dn, FCR_D_Up, Spot) 
     SOC_ini = Data["SOC_0"]
 
     # Across the whole day, 24 hours
@@ -113,7 +112,7 @@ function baseline_model_DA_and_FCR_D(Data, Threshold_Max_coef, Threshold_Min_coe
         end
     end
 
-    #Calculate expected revenue
+    #Calculate expected profit
     G_DA_t = Spot.*E_nom.*(Spot_Up .- Spot_Dn) 
     G_FD2_t = FCR_D_Up.*E_nom.*FCR_D_Up_action.+FCR_D_Dn.*E_nom.*FCR_D_Dn_action
     C_Deg_t = (E_nom.*(Spot_Up .- Spot_Dn)) ./ (2*SOC_max) .* Cost_per_cycle  #Degradation cost only comes from DA contribution
@@ -137,46 +136,3 @@ function baseline_model_DA_and_FCR_D(Data, Threshold_Max_coef, Threshold_Min_coe
                    )
     return Results
 end
-
-
-# Initialize and set the State of charge based on the 
-function Initialize_SOC_baseline_model(FCR_D_Dn, FCR_D_Up, Spot)
-
-    # Input:
-    # FCR_D_Dn. Array of the FCR-D Down prices
-    # FCR_D_Up. Array of the FCR-D Down prices
-    # Spot    . Array of the spot prices
-
-    # Output:
-    # SOC_ini . Initial state of charge. Either 100 % or 0 % SOC.
-
-    # Description of the rules
-    # Check the relationship between the prices of Spot and FCR-D up/down. And set the state of charge accordingly
-
-    
-    if mean(Spot) > mean(FCR_D_Dn) && mean(Spot) > mean(FCR_D_Up)
-        if argmin(Spot) <= argmax(Spot)
-            SOC_ini = 0
-        elseif argmin(Spot) > argmax(Spot)
-            SOC_ini = 1
-        end
-    elseif mean(Spot) <= mean(FCR_D_Dn) || mean(Spot) <= mean(FCR_D_Up)
-        if FCR_D_Dn[1] <= FCR_D_Up[1]
-            SOC_ini = 1
-        elseif FCR_D_Dn[1] > FCR_D_Up[1]
-            SOC_ini = 0
-        end
-    end
-
-    return SOC_ini
-end
-
-
-
-
-
-
-
-
-
-

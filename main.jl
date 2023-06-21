@@ -125,8 +125,8 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     processed_data = load_data("processed")
     forgettingFactor_data = load_data("forgettingFactor")
 
-    RT_revenue = Dict()
-    Exp_revenue = Dict()
+    RT_profit = Dict()
+    Exp_profit = Dict()
     
 
     #Run models
@@ -152,76 +152,76 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
 
                     if issubset(["rule"],Models_range)  == true # Check if rule need to be runned
                         result_rule = run_rule(processed_data, forecast_data, d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023)
-                        RT_rule_revenue = result_rule["RT"]["revenue"]
-                        Exp_rule_revenue = sum(result_rule["Bid"]["obj_t"])
+                        RT_rule_profit = result_rule["RT"]["profit"]
+                        Exp_rule_profit = sum(result_rule["Bid"]["obj_t"])
                         if save_all == true
                             save_dict(result_rule, "rule_$(id)")
                         end
                     else
-                        RT_rule_revenue = 0
-                        Exp_rule_revenue = 0
+                        RT_rule_profit = 0
+                        Exp_rule_profit = 0
                     end
 
                     if issubset(["det"],Models_range)  == true
                         result_det = run_det(processed_data, forecast_data, d_train_set, moving_day, test_day_2023)
-                        RT_det_revenue = result_det["RT"]["revenue"]
-                        Exp_det_revenue = sum(result_det["Bid"]["obj_t"])
+                        RT_det_profit = result_det["RT"]["profit"]
+                        Exp_det_profit = sum(result_det["Bid"]["obj_t"])
                         if save_all == true
                             save_dict(result_det, "det_$(id)")
                         end
                     else
-                        RT_det_revenue = 0
-                        Exp_det_revenue = 0
+                        RT_det_profit = 0
+                        Exp_det_profit = 0
                     end
 
                     if issubset(["oracle"],Models_range)  == true
                         result_oracle = run_oracle(processed_data, d_train_set, moving_day, test_day_2023)
-                        RT_oracle_revenue = result_oracle["RT"]["revenue"]
-                        Exp_oracle_revenue = sum(result_oracle["Bid"]["obj_t"])
+                        RT_oracle_profit = result_oracle["RT"]["profit"]
+                        Exp_oracle_profit = sum(result_oracle["Bid"]["obj_t"])
                         if save_all == true
                             save_dict(result_oracle, "oracle_$(id)")
                         end
                     else
-                        RT_oracle_revenue = 0
-                        Exp_oracle_revenue = 0
+                        RT_oracle_profit = 0
+                        Exp_oracle_profit = 0
                     end
                     
                     if issubset(["sto"],Models_range) == true
                         result_sto = run_sto(processed_data, forecast_data,d_train_set, moving_day, size_W1, size_W2, size_W3, test_day_2023)
-                        RT_sto_revenue = result_sto["RT"]["revenue"]
-                        Exp_sto_revenue = sum(result_sto["Bid"]["obj_t"])
+                        RT_sto_profit = result_sto["RT"]["profit"]
+                        Exp_sto_profit = sum(result_sto["Bid"]["obj_t"])
                         if save_all == true
                             save_dict(result_sto, "sto_$(id)")
                         end
                     else
-                        RT_sto_revenue = 0
-                        Exp_sto_revenue = 0
+                        RT_sto_profit = 0
+                        Exp_sto_profit = 0
                     end
 
                     if issubset(["feature"],Models_range)  == true
                         result_feature = run_feature(processed_data, forecast_data, forgettingFactor_data , d_train_set, moving_day, test_day_2023, scaling)
-                        RT_feature_revenue = result_feature["RT"]["revenue"]
-                        Exp_feature_revenue = sum(result_feature["Bid"]["obj_t"])
+                        RT_feature_profit = result_feature["RT"]["profit"]
+                        Exp_feature_profit = sum(result_feature["Bid"]["obj_t"])
                         if save_all == true
                             save_dict(result_feature, "feature_$(id)")
                         end     
                     else
-                        RT_feature_revenue = 0
-                        Exp_feature_revenue = 0                
+                        RT_feature_profit = 0
+                        Exp_feature_profit = 0                
                     end
 
                     
                     #Store RT results for all models
-                    RT_revenue[id] = Dict("rule" => RT_rule_revenue,
-                                        "det" => RT_det_revenue,
-                                        "oracle" => RT_oracle_revenue,
-                                        "sto" => RT_sto_revenue,
-                                        "feature" => RT_feature_revenue)
-                    Exp_revenue[id] = Dict("rule" => Exp_rule_revenue,
-                                        "det" => Exp_det_revenue,
-                                        "oracle" => Exp_oracle_revenue,
-                                        "sto" => Exp_sto_revenue,
-                                        "feature" => Exp_feature_revenue)
+                    RT_profit[id] = Dict("rule" => RT_rule_profit,
+                                        "det" => RT_det_profit,
+                                        "oracle" => RT_oracle_profit,
+                                        "sto" => RT_sto_profit,
+                                        "feature" => RT_feature_profit)
+                    Exp_profit[id] = Dict("rule" => Exp_rule_profit,
+                                        "det" => Exp_det_profit,
+                                        "oracle" => Exp_oracle_profit,
+                                        "sto" => Exp_sto_profit,
+                                        "feature" => Exp_feature_profit)
 
                     @info("Finished running id: $(id)")
                 end
@@ -229,34 +229,34 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
         end
     end
 
-    #Save RT revenue and expected revenue results for all models
+    #Save RT profit and expected profit results for all models
     if out_of_sample == true
-        save_dict(RT_revenue, "RT_revenue_OoS")
-        save_dict(Exp_revenue, "Exp_revenue_OoS")
+        save_dict(RT_profit, "RT_profit_OoS")
+        save_dict(Exp_profit, "Exp_profit_OoS")
     elseif out_of_sample == false
-        save_dict(RT_revenue, "RT_revenue")
-        save_dict(Exp_revenue, "Exp_revenue")
+        save_dict(RT_profit, "RT_profit")
+        save_dict(Exp_profit, "Exp_profit")
     end
 
-    return RT_revenue, Exp_revenue
+    return RT_profit, Exp_profit
 end
 
-#Models_range = ["sto"]
+#Models_range = ["feature"]
 Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
-d_train_set_range = [5]
-#d_train_set_range = [2,4,5,7,9,11]
+#d_train_set_range = [5]
+d_train_set_range = [2,4,5,7,9,11]
 #d_train_set_range = 1:10 #Set one value for one test case 
-moving_day_range = 62 #(within range 0:87)
-#moving_day_range = 0:87 #(within range 0:87)
-#forecast_range = ["forecast_all1"]
+#moving_day_range = 62 #(within range 0:87)
+moving_day_range = 0:87 #(within range 0:87)
+#forecast_range = ["forecast_real"]
 #forecast_range = ["forecast_real","forecast_all1", "forecast_all2", "forecast_all3", "forecast_all4", "forecast_all5", "forecast_all6"]
 forecast_range = ["forecast_real","forecast_all1", "forecast_all6"]
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for Feature)
 save_all = true #true/false (for saving individual results)
 
-RT_revenue, Exp_revenue = run_all(Models_range,d_train_set_range, moving_day_range,forecast_range, out_of_sample, scaling, save_all)
+RT_profit, Exp_profit = run_all(Models_range,d_train_set_range, moving_day_range,forecast_range, out_of_sample, scaling, save_all)
 
 

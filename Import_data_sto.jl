@@ -71,6 +71,8 @@ function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, 
         FD1_up_percentage = cat(FD1_up_percentage, f_FD1_up_percentage,dims=(2))
         FD2_up_percentage = cat(FD2_up_percentage, f_FD2_up_percentage,dims=(2))
 
+        @info("Forecast added to input for optimization of the Stochastic model!")
+
     end
 
     # Bid prices
