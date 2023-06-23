@@ -91,7 +91,7 @@ function run_sto(processed_data, forecast_data, d_train_set, moving_day, size_W1
     return result_sto
 end
 
-function run_feature(processed_data, forecast_data, forgettingFactor_data, d_train_set, moving_day, test_day_2023, scaling)
+function run_feature(processed_data, forecast_data, Architecture,forgettingFactor_data, d_train_set, moving_day, test_day_2023, scaling)
     #Feature Model
 
     Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
@@ -102,10 +102,9 @@ function run_feature(processed_data, forecast_data, forgettingFactor_data, d_tra
     
     data_feature = data_import_Feature(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling,"With forecast in input")
     
-    Architecture = "GA" # General or Hourly architecture of the coefficients
-    feature_solution = Feature_Model(data_feature, Data_index, Architecture)
+    feature_solution = Feature_Model(data_feature, Architecture)
     
-    Bid_Results_feature = Create_bid_Feature(data_feature, feature_solution)
+    Bid_Results_feature = Create_bid_Feature(data_feature, feature_solution, Architecture)
 
     #Test Feature model real-time
     data_real_feature = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_feature)
@@ -199,12 +198,16 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                     end
 
                     if issubset(["feature"],Models_range)  == true
-                        result_feature = run_feature(processed_data, forecast_data, forgettingFactor_data , d_train_set, moving_day, test_day_2023, scaling)
-                        RT_feature_profit = result_feature["RT"]["profit"]
-                        Exp_feature_profit = sum(result_feature["Bid"]["obj_t"])
-                        if save_all == true
-                            save_dict(result_feature, "feature_$(id)")
-                        end     
+                        Architectures = ["GA"] # General or Hourly architecture of the coefficients
+                        for Architecture in Architectures
+                            
+                            result_feature = run_feature(processed_data, forecast_data, Architecture,forgettingFactor_data , d_train_set, moving_day, test_day_2023, scaling)
+                            RT_feature_profit = result_feature["RT"]["profit"]
+                            Exp_feature_profit = sum(result_feature["Bid"]["obj_t"])
+                            if save_all == true
+                                save_dict(result_feature, "feature_$(Architecture)_$(id)")
+                            end 
+                        end    
                     else
                         RT_feature_profit = 0
                         Exp_feature_profit = 0                
@@ -241,18 +244,18 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     return RT_profit, Exp_profit
 end
 
-#Models_range = ["feature"]
-Models_range = ["rule","det","oracle","sto","feature"]
+Models_range = ["feature"]
+#Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
-#d_train_set_range = [5]
-d_train_set_range = [2,4,5,7,9,11]
+d_train_set_range = [5]
+#d_train_set_range = [2,4,5,7,9,11]
 #d_train_set_range = 1:10 #Set one value for one test case 
 #moving_day_range = 62 #(within range 0:87)
 moving_day_range = 0:87 #(within range 0:87)
-#forecast_range = ["forecast_real"]
-#forecast_range = ["forecast_real","forecast_all1", "forecast_all2", "forecast_all3", "forecast_all4", "forecast_all5", "forecast_all6"]
-forecast_range = ["forecast_real","forecast_all1", "forecast_all6"]
+forecast_range = ["1"]
+#forecast_range = ["0","1", "2", "3", "4", "5", "6"]
+#forecast_range = ["0","1", "6"]
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for Feature)
 save_all = true #true/false (for saving individual results)

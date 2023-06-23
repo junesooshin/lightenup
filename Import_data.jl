@@ -197,15 +197,15 @@ function load_data(file)
         data_import = DataFrame(CSV.File(filepath)) 
         return data_import
 
-    elseif occursin.("forecast",file) # check if forecast is in file
-        filepath = string(dir , "/Processed_data/", file , ".csv")
-        data_import = DataFrame(CSV.File(filepath))
-        #data_import = data_import_all[(24*2)+1:end, :] #Cut the first two days to match test data
-        return data_import
-
     elseif file == "forgettingFactor"
         filepath = string(dir , "/Processed_data/", "forgettingFactor.csv")
         data_import = DataFrame(CSV.File(filepath))
+        return data_import
+
+    else # If none of the above it is the forecast file
+        filepath = string(dir , "/Processed_data/forecast_all", file , ".csv")
+        data_import = DataFrame(CSV.File(filepath))
+        #data_import = data_import_all[(24*2)+1:end, :] #Cut the first two days to match test data
         return data_import
     
     end 

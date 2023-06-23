@@ -1,18 +1,17 @@
 
-function Feature_Model(Data, Data_index, Architecture)
+function Feature_Model(Data, Architecture)
 
     #
     # Data: All the data required for running the 
-    # Data_index: Provide the index for the sample data, test index and forecast indexes
     # Architecture: The architecture of the coefficient. Either GA= coefficient for each feature. Or HA=coefficient for each feature and hour
     # Model_configuration: "Without forecast", "With forecast" or "Forecast minimization"
 
 
 
     # Pick the indexes
-    idx = Data_index["N_train"]
-    D = Data_index["D_train"]
-    H = Data_index["H"]
+    
+    D = Data["D_train"]
+    H = Data["H"]
 
     if Architecture == "GA"
         HF = [1]
@@ -235,11 +234,10 @@ end
 
 
 
-function Create_bid_Feature(Data, Results_from_training)
+function Create_bid_Feature(Data, Results_from_training,Architecture)
 
     #=
     Data. (Dict). Data from Data_import_Julia. Should consist of all the features
-    Data_index. (Dict). All the indexes used for training
     Results_from_training (the Coefficient from the training model)
 
     This model takes the coefficients and the bidded prices found from the training and provide the accepted bids with both volume and price
@@ -276,18 +274,36 @@ function Create_bid_Feature(Data, Results_from_training)
     f_lambda_FD1_up = Data["f_FD1_up_t"]
     f_lambda_FD1_dn = Data["f_FD1_dn_t"]
 
-    features = Data["X_f"]
-    columnLength = length(features[1,1,:]) # all the columns in features (not accounting the offset) (F,)
-    offset = ones(length(features[:,1,1])) # (24,)
+    X_f = Data["X_f"]
+    columnLength = length(X_f[1,1,:]) # all the columns in features (not accounting the offset) (F,)
+    offset = ones(length(X_f[:,1,1])) # (24,)
 
     ############### Compute the bids ##################
-    b_FD2_up = sum(q_FD2_up[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD2_up[columnLength+1]
-    b_FD2_dn = sum(q_FD2_dn[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD2_dn[columnLength+1]
-    b_DA_up  = sum(q_DA_up[f] * features[:,1, f] for f in 1:columnLength) + offset * q_DA_up[columnLength+1]
-    b_DA_dn  = sum(q_DA_dn[f] * features[:,1, f] for f in 1:columnLength) + offset * q_DA_dn[columnLength+1]
-    b_FD1_up = sum(q_FD1_up[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD1_up[columnLength+1]
-    b_FD1_dn = sum(q_FD1_dn[f] * features[:,1, f] for f in 1:columnLength) + offset * q_FD1_dn[columnLength+1]
+    if Architecture == "GA"
+        b_FD2_up = sum(q_FD2_up[1,f] * X_f[:,1, f] for f in 1:columnLength) + offset * q_FD2_up[1,columnLength+1]
+        b_FD2_dn = sum(q_FD2_dn[1,f] * X_f[:,1, f] for f in 1:columnLength) + offset * q_FD2_dn[1,columnLength+1]
+        b_DA_up  = sum(q_DA_up[1,f] * X_f[:,1, f] for f in 1:columnLength) + offset * q_DA_up[1,columnLength+1]
+        b_DA_dn  = sum(q_DA_dn[1,f] * X_f[:,1, f] for f in 1:columnLength) + offset * q_DA_dn[1,columnLength+1]
+        b_FD1_up = sum(q_FD1_up[1,f] * X_f[:,1, f] for f in 1:columnLength) + offset * q_FD1_up[1,columnLength+1]
+        b_FD1_dn = sum(q_FD1_dn[1,f] * X_f[:,1, f] for f in 1:columnLength) + offset * q_FD1_dn[1,columnLength+1]
 
+    elseif Architecture == "HA"
+        b_FD2_up = sum(q_FD2_up[:,f] .* X_f[:,1, f] for f in 1:columnLength) + offset .* q_FD2_up[:,columnLength+1]
+        b_FD2_dn = sum(q_FD2_dn[:,f] .* X_f[:,1, f] for f in 1:columnLength) + offset .* q_FD2_dn[:,columnLength+1]
+        b_DA_up = sum(q_DA_up[:,f] .* X_f[:,1, f] for f in 1:columnLength) + offset .* q_DA_up[:,columnLength+1]
+        b_DA_dn  = sum(q_DA_dn[:,f] .* X_f[:,1, f] for f in 1:columnLength) + offset .* q_DA_dn[:,columnLength+1]
+        b_FD1_up = sum(q_FD1_up[:,f] .* X_f[:,1, f] for f in 1:columnLength) + offset .* q_FD1_up[:,columnLength+1]
+        b_FD1_dn = sum(q_FD1_dn[:,f] .* X_f[:,1, f] for f in 1:columnLength) + offset .* q_FD1_dn[:,columnLength+1]
+
+        # Pick the last day
+        #b_FD2_up = b_FD2_up_all[(end-24):end,:]
+        #b_FD2_dn = b_FD2_dn_all[(end-24):end,:]
+        #b_DA_up = b_DA_up_all[(end-24):end,:]
+        #b_DA_dn = b_DA_dn_all[(end-24):end,:]
+        #b_FD1_up = b_FD1_up_all[(end-24):end,:]
+        #b_FD1_dn = b_FD1_dn_all[(end-24):end,:]
+
+    end
     y_FD2_up =  mean(Data["f_FD2_y_up_t"], dims=2)
     y_FD2_dn =  mean(Data["f_FD2_y_dn_t"], dims=2)
     y_FD1_up =  mean(Data["f_FD1_y_up_t"], dims=2)
@@ -323,7 +339,7 @@ function Create_bid_Feature(Data, Results_from_training)
                        "f_FD2_y_dn_t" => y_FD2_dn,
                        "f_FD1_y_up_t" => y_FD1_up,
                        "f_FD1_y_dn_t" => y_FD1_dn,
-                       "X" => X
+                       "X" => X, "X_f" => X_f
                        )
     
     @info("New feature solution saved!")

@@ -80,6 +80,7 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
     if Model_configuration == "With forecast in input"
 
         n_train_days = n_train_days + 1
+        D_train = collect(1:n_train_days)
 
         X_with_forecast = cat(X, X_f,dims=(2)) # Add the forecast to the training data
         X = X_with_forecast
@@ -98,6 +99,8 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
         f_FD1_y_up_t = cat(f_FD1_y_up_t, f_FD1_up_percentage,dims=(2))
         f_FD2_y_up_t = cat(f_FD2_y_up_t, f_FD2_up_percentage,dims=(2))
         
+        
+
         @info("Forecast added to input for optimization of the Feature model!")
 
     end
@@ -120,7 +123,8 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
     end
 
     Data = Dict(
-    "n_features" => n_features, "X" => X, "X_f" => X_f, "X_train_f" => X_train_f,
+    "n_features" => n_features, "D_train" => D_train, "H" => H,
+     "X" => X, "X_f" => X_f, "X_train_f" => X_train_f,
     "f_FD1_y_up_t" => f_FD1_y_up_t, "f_FD1_y_dn_t" => f_FD1_y_dn_t, 
     "f_FD2_y_up_t" => f_FD2_y_up_t, "f_FD2_y_dn_t" => f_FD2_y_dn_t, 
     "lambda_FD2_up" => lambda_FD2_up, "lambda_FD2_dn" => lambda_FD2_dn,
