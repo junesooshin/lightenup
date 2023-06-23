@@ -198,14 +198,14 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                     end
 
                     if issubset(["feature"],Models_range)  == true
-                        Architectures = ["GA"] # General or Hourly architecture of the coefficients
+                        Architectures = ["HA"] # General or Hourly architecture of the coefficients
                         for Architecture in Architectures
                             
                             result_feature = run_feature(processed_data, forecast_data, Architecture,forgettingFactor_data , d_train_set, moving_day, test_day_2023, scaling)
                             RT_feature_profit = result_feature["RT"]["profit"]
                             Exp_feature_profit = sum(result_feature["Bid"]["obj_t"])
                             if save_all == true
-                                save_dict(result_feature, "feature_$(Architecture)_$(id)")
+                                save_dict(result_feature, "feature_$(id)")
                             end 
                         end    
                     else
@@ -244,8 +244,8 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     return RT_profit, Exp_profit
 end
 
-Models_range = ["feature"]
-#Models_range = ["rule","det","oracle","sto","feature"]
+#Models_range = ["feature"]
+Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
 d_train_set_range = [5]

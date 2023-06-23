@@ -127,8 +127,11 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0)
 
     #######    TEST INDEXES    #######
 
+    # Days ahead to set the forecast and test
+    days_ahead = 1
+
     # WILL ALWAYS START ON THE 3rd of January
-    start_test_idx = end_train_idx + 2*24 # start for the test. Which is by default at the 3rd of january(WHICH IS WHY it is +2). May be moved to the right by days for sliding window
+    start_test_idx = end_train_idx + days_ahead*24 # start for the test. Which is by default at the 3rd of january(WHICH IS WHY it is +2). May be moved to the right by days for sliding window
     
     # will always give the 24 hours of the testing day.
     end_test_idx = Total_Data_length
@@ -140,7 +143,7 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0)
     
     #######  FORECAST INDEXES  #######
 
-    start_forecast_idx = end_train_idx + 2*24
+    start_forecast_idx = end_train_idx + days_ahead*24
     end_forecast_idx = start_forecast_idx + 24
     Forecast_period_idx = index[(start_forecast_idx+1):end_forecast_idx]
 

@@ -106,8 +106,6 @@ def Count_performance_for_each_model(Array,includeOracle = False):
     profit_type_order = ['Expected','RT']
     Array_to_use = Array[:,:,:,0:noOracle,:]
 
-    argmax_result = np.argmax(Array_to_use, axis=3)
-    #print(argmax_result)
     CountArray = np.zeros((Array_to_use.shape[0],Array_to_use.shape[1],Array_to_use.shape[2],Array_to_use.shape[3],Array_to_use.shape[4]), dtype=int)  # Initialize the counts matrix
     for f in range(Array.shape[0]): # Forecast
         for sample_n in range(Array.shape[1]): # Sample length
@@ -120,12 +118,32 @@ def Count_performance_for_each_model(Array,includeOracle = False):
                         CountArray[f, sample_n, t, max_index, profit_type] = 1
 
 
-    # CountArray has dim (f, sample_len, profit_type, model_type)
+    # CountArray_new has dim (f, sample_len, profit_type, model_type)
     return CountArray, model_order,profit_type_order
 
+def plot_each_test_day_Profit(data,models,x_axis,drawstyle):
+    #x_axis = np.arange(88)
+    color_models = ['C3','C0', 'C2', 'C1','C4']
+    y_axis_label = 'Realized Profit [\u20AC/day]'
+    plot = data[models]
 
+    
+    fig, ax = plt.subplots(figsize=(20, 6), dpi=100)
 
-def plot_profit_Test(Array,PlotCase, Forecast_selection, SampleSize_selection, barwidth = 0.1, Forecast_label = [1,2,3], SampleSize_label = [2,4,5,7,9,11],ShowEachTestDay = False):
+    for m,model in enumerate(models):
+        ax.plot(x_axis,data[model], 'o-',color=color_models[m],drawstyle=drawstyle,markersize=10, linewidth=1)
+
+    ax.tick_params(axis='y', which='major', labelsize=15)
+    ax.tick_params(axis='x', which='major', labelsize=15)
+
+    ax.set_ylabel(y_axis_label, fontsize=14, labelpad=10)
+    ax.set_xlabel('Test day', fontsize=14, labelpad=10)
+    
+    ax.legend(models, loc="upper right")
+    plt.show()
+    
+
+def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, barwidth = 0.1, Forecast_label = [1,2,3], SampleSize_label = [2,4,5,7,9,11],ShowEachTestDay = False):
 
     # Sample data
     #Array = np.random.rand(3, 6, 88, 5, 2)
@@ -136,7 +154,7 @@ def plot_profit_Test(Array,PlotCase, Forecast_selection, SampleSize_selection, b
 
 
     colors = ['C3', 'C0', 'C2', 'C1']  # Colors for the fourth dimension
-    Model = ['Rule', 'Det', 'Sto', 'Feature']
+    Model = ['Rule', 'Deterministic', 'Stochastic', 'Feature']
     
     
     mean_values = np.mean(Array, axis=2)
@@ -198,9 +216,24 @@ def plot_profit_Test(Array,PlotCase, Forecast_selection, SampleSize_selection, b
 
     linewidth = 4
     
-    size_around_tick = barwidth * bar_count / 2 + barwidth/2
+ 
 
-    bar_list = [-(barwidth * bar_count / 2) + i * barwidth for i in range(bar_count)]
+    #bar_list = [-(barwidth * bar_count / 2) + i * barwidth for i in range(bar_count)]
+    bar_list = [i*0 for i in range(bar_count)]
+    spacing = barwidth/10
+    for i in range(bar_count):
+        if i == 0:
+            bar_list[i] = -(barwidth * bar_count / 2) + i * barwidth
+        else:
+            bar_list[i] = bar_list[i-1] + barwidth
+        
+        if i % 2 == 0:
+            bar_list[i] = bar_list[i] + spacing
+            
+            
+        
+    size_around_tick = barwidth * bar_count / 2 + barwidth/2   
+
     # Compute the means along the third dimension
 
 
@@ -209,8 +242,8 @@ def plot_profit_Test(Array,PlotCase, Forecast_selection, SampleSize_selection, b
     fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
 
     # Plot value of the oracle model
-    mean_value = np.mean(Array[2, 0, :, 4, 1])
-    lines = ax.hlines(mean_value, 0 - size_around_tick, len(x_axis) - 1 + size_around_tick, color=linecolor, linestyle=linestyle, linewidth=linewidth)
+    mean_value = np.mean(Array[Forecast_selection, SampleSize_selection, :, 4, 1])
+    lines = ax.hlines(mean_value, 0 - size_around_tick + 4 *spacing, len(x_axis) - 1 + size_around_tick, color=linecolor, linestyle=linestyle, linewidth=linewidth)
 
 
     for f,forecast  in enumerate(Forecast_selection):
@@ -221,16 +254,25 @@ def plot_profit_Test(Array,PlotCase, Forecast_selection, SampleSize_selection, b
             for j, color in enumerate(colors):
                 for k, fill_pattern in enumerate(fill_patterns):
                     # construct where on the x axis the bar is located
+
+                    # To get a little bit of spacing after each model
+                    
+
                     if PlotCase == 'forecast':
+                        
                         bar_left = f + bar_list[count_k]
+
+
                         j_mod = j
                     elif PlotCase == 'Sample size':
                         bar_left = s + bar_list[count_k]
                         j_mod = s_m_idx[j] # Just so only specified models are showed
-                        
+
                     else:
+
                         bar_left = bar_list[count_k]
                         j_mod = j
+
 
                     
                     # Define the height of the bar
@@ -623,6 +665,9 @@ def bid_plots(bid_result, model, color, save):
         plt.savefig(f'Result_plots/bid_plots_{model}.png', bbox_inches='tight')
 
     # plt.show()
+
+
+    
 
 def plot_training_price(with_acceptance, bid_result, model, color, save):
     # Plot prices used for training

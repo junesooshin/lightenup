@@ -176,6 +176,22 @@ function create_bid_stochastic(Data, sto_solution)
     f_lambda_FD1_up = Data["f_FD1_up_t"][:,1] #Flatten array
     f_lambda_FD1_dn = Data["f_FD1_dn_t"][:,1] #Flatten array
 
+    # Mean bid prices
+
+    #=
+                "f_FD2_up_tw_input" => f_FD2_up_tw[T,W1],
+            "f_FD2_dn_tw_input" => f_FD2_dn_tw[T,W1],
+            "f_DA_tw_input" => f_DA_tw[T,W1,W2],
+            "f_FD1_up_tw_input" => f_FD1_up_tw[T,W1,W2,W3],
+            "f_FD1_dn_tw_input" => f_FD1_dn_tw[T,W1,W2,W3],
+    =#
+    
+    f_DA_t_mean = mean(reshape(sto_solution["f_DA_tw_input"], (24, size_W1*size_W2)), dims=2)[:,1]
+    f_lambda_FD2_up_mean = mean(reshape(sto_solution["f_FD2_up_tw_input"], (24, size_W1)), dims=2)[:,1]
+    f_lambda_FD2_dn_mean = mean(reshape(sto_solution["f_FD2_dn_tw_input"], (24, size_W1)), dims=2)[:,1]
+    f_lambda_FD1_up_mean = mean(reshape(sto_solution["f_FD1_up_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
+    f_lambda_FD1_dn_mean = mean(reshape(sto_solution["f_FD1_dn_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
+
     #Calculate expected profit
     G_FD2_t = f_lambda_FD2_up.*p_FD2_up .+ f_lambda_FD2_dn.*p_FD2_dn 
     G_FD1_t = f_lambda_FD1_up.*p_FD1_up .+ f_lambda_FD1_dn.*p_FD1_dn 
@@ -200,6 +216,11 @@ function create_bid_stochastic(Data, sto_solution)
                     "f_lambda_FD1_up" => f_lambda_FD1_up, 
                     "f_lambda_FD1_dn" => f_lambda_FD1_dn,
                     "f_DA_t" => f_DA_t,
+                    "f_lambda_FD2_up_mean" => f_lambda_FD2_up_mean, 
+                    "f_lambda_FD2_dn_mean" => f_lambda_FD2_dn_mean,
+                    "f_lambda_FD1_up_mean" => f_lambda_FD1_up_mean, 
+                    "f_lambda_FD1_dn_mean" => f_lambda_FD1_dn_mean,
+                    "f_DA_t_mean" => f_DA_t_mean,
                     "SOC" => soc,
                     "f_FD1_y_up_t" => f_FD1_y_up_t,
                     "f_FD1_y_dn_t" => f_FD1_y_dn_t,
