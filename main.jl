@@ -76,7 +76,8 @@ function run_sto(processed_data, forecast_data, d_train_set, moving_day, size_W1
     #Stochastic Model
     Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
 
-    data_sto = data_import_stochastic(processed_data, forecast_data, Data_index, size_W1, size_W2, size_W3,"With forecast in input")
+    #data_sto = data_import_stochastic(processed_data, forecast_data, Data_index, size_W1, size_W2, size_W3,"With forecast in input")
+    data_sto = data_import_stochastic(processed_data, forecast_data, Data_index, size_W1, size_W2, size_W3)
     sto_solution = stochastic_model(data_sto)
     #print(data_sto["f_FD1_up_t"])
 
@@ -100,7 +101,8 @@ function run_feature(processed_data, forecast_data, Architecture,forgettingFacto
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
     #Feature_Selection = ["Spot","FD1_down","FD2_down","FD1_up","FD2_up","Spot^2","Spot FD1_down","Spot FD2_down","Spot FD1_up","Spot FD2_up","FD1_down^2","FD1_down FD2_down","FD1_down FD1_up","FD1_down FD2_up","FD2_down^2","FD2_down FD1_up","FD2_down FD2_up","FD1_up^2","FD1_up FD2_up","FD2_up^2"]
     
-    data_feature = data_import_Feature(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling,"With forecast in input")
+    #data_feature = data_import_Feature(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling,"With forecast in input")
+    data_feature = data_import_Feature(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling)
     
     feature_solution = Feature_Model(data_feature, Architecture)
     
@@ -198,7 +200,7 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                     end
 
                     if issubset(["feature"],Models_range)  == true
-                        Architectures = ["HA"] # General or Hourly architecture of the coefficients
+                        Architectures = ["GA"] # General or Hourly architecture of the coefficients
                         for Architecture in Architectures
                             
                             result_feature = run_feature(processed_data, forecast_data, Architecture,forgettingFactor_data , d_train_set, moving_day, test_day_2023, scaling)
@@ -244,18 +246,19 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     return RT_profit, Exp_profit
 end
 
-#Models_range = ["feature"]
+#Models_range = ["sto"]
 Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
 d_train_set_range = [5]
+#d_train_set_range = [2,5,10,20,40,80,160,320,365]
 #d_train_set_range = [2,4,5,7,9,11]
 #d_train_set_range = 1:10 #Set one value for one test case 
 #moving_day_range = 62 #(within range 0:87)
 moving_day_range = 0:87 #(within range 0:87)
 forecast_range = ["1"]
 #forecast_range = ["0","1", "2", "3", "4", "5", "6"]
-#forecast_range = ["0","1", "6"]
+#forecast_range = ["0","1","4","6"]
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for Feature)
 save_all = true #true/false (for saving individual results)

@@ -121,14 +121,14 @@ def Count_performance_for_each_model(Array,includeOracle = False):
     # CountArray_new has dim (f, sample_len, profit_type, model_type)
     return CountArray, model_order,profit_type_order
 
-def plot_each_test_day_Profit(data,models,x_axis,drawstyle):
+def plot_each_test_day_Profit(data,models,x_axis,drawstyle,save = False):
     #x_axis = np.arange(88)
     color_models = ['C3','C0', 'C2', 'C1','C4']
     y_axis_label = 'Realized Profit [\u20AC/day]'
     plot = data[models]
 
     
-    fig, ax = plt.subplots(figsize=(20, 6), dpi=100)
+    fig, ax = plt.subplots(figsize=(20, 10), dpi=100)
 
     for m,model in enumerate(models):
         ax.plot(x_axis,data[model], 'o-',color=color_models[m],drawstyle=drawstyle,markersize=10, linewidth=1)
@@ -140,10 +140,14 @@ def plot_each_test_day_Profit(data,models,x_axis,drawstyle):
     ax.set_xlabel('Test day', fontsize=14, labelpad=10)
     
     ax.legend(models, loc="upper right")
+
+    if save == True:
+        plt.savefig(f'Result_plots/Profit_all_test_days_plot.pdf',format="pdf", bbox_inches='tight')
+
     plt.show()
     
 
-def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, barwidth = 0.1, Forecast_label = [1,2,3], SampleSize_label = [2,4,5,7,9,11],ShowEachTestDay = False):
+def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, barwidth = 0.1, Forecast_label = [1,2,3], SampleSize_label = [2,4,5,7,9,11],ShowEachTestDay = False,save = False):
 
     # Sample data
     #Array = np.random.rand(3, 6, 88, 5, 2)
@@ -258,12 +262,11 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
                     # To get a little bit of spacing after each model
                     
 
-                    if PlotCase == 'forecast':
+                    if PlotCase == 'Forecasts':
                         
                         bar_left = f + bar_list[count_k]
-
-
                         j_mod = j
+
                     elif PlotCase == 'Sample size':
                         bar_left = s + bar_list[count_k]
                         j_mod = s_m_idx[j] # Just so only specified models are showed
@@ -334,9 +337,11 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
     legend_handles.append(plt.Line2D([0], [0], color=linecolor, linestyle=linestyle, label=linelabel,linewidth=linewidth))
 
     # Show the legend
-    ax.legend(handles=legend_handles,bbox_to_anchor=(1.02, 1), loc='upper left')
+    ax.legend(handles=legend_handles,bbox_to_anchor=(1.02, 0.9), loc='upper left')
 
 
+    if save == True:
+        plt.savefig(f'Result_plots/Profit_Bar_plot.pdf',format="pdf", bbox_inches='tight')
     # Show the plot
     plt.show()
 
