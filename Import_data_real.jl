@@ -31,20 +31,22 @@ function data_import_real(data_import, Data_index, test_day, Bid_Results)
     acceptance_FD2_up   = zeros((24))
     acceptance_FD2_down = zeros((24))
     
+    acceptance_criteria_factor = 1.05
+
     for i in 1:24
-        if FD1_up_percentage[i] > 0 && FD1_up_bid_price[i] <= FD1_up_price[i]
+        if FD1_up_percentage[i] > 0 && FD1_up_bid_price[i] <= FD1_up_price[i]*acceptance_criteria_factor
             acceptance_FD1_up[i] = 1      
         end
         
-        if FD1_down_percentage[i] > 0 && FD1_down_bid_price[i] <= FD1_down_price[i]
+        if FD1_down_percentage[i] > 0 && FD1_down_bid_price[i] <= FD1_down_price[i]*acceptance_criteria_factor
             acceptance_FD1_down[i] = 1      
         end
 
-        if FD2_down_percentage[i] > 0 && FD2_down_bid_price[i] <= FD2_down_price[i]
+        if FD2_down_percentage[i] > 0 && FD2_down_bid_price[i] <= FD2_down_price[i]*acceptance_criteria_factor
             acceptance_FD2_down[i] = 1      
         end
 
-        if FD2_up_percentage[i] > 0 && FD2_up_bid_price[i] <= FD2_up_price[i]
+        if FD2_up_percentage[i] > 0 && FD2_up_bid_price[i] <= FD2_up_price[i]*acceptance_criteria_factor
             acceptance_FD2_up[i] = 1      
         end
     end

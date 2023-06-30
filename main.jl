@@ -23,7 +23,7 @@ include("Model_Realtime.jl")
 function run_rule(processed_data, forecast_data, d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023)
     
     #Rule-based model
-    Data_index = Define_Training_and_Test_index(d_train_set, moving_day) #default d=0, AuctionType="D-2"
+    Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
     data_rule = data_import_Rule(forecast_data,Data_index)
 
     Bid_Results_rule = baseline_model_DA_and_FCR_D(data_rule, Threshold_Max_coef, Threshold_Min_coef)
@@ -57,7 +57,7 @@ end
 function run_oracle(processed_data, d_train_set, moving_day, test_day_2023)
 
     #Deterministic Model
-    Data_index = Define_Training_and_Test_index(d_train_set, moving_day) #default d=0, AuctionType="D-2"
+    Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
     data_oracle = data_import_Oracle(processed_data, Data_index,test_day_2023)
     
     Bid_Results_oracle  = Deterministic_Model(data_oracle)
@@ -75,15 +75,9 @@ end
 function run_sto(processed_data, forecast_data, d_train_set, moving_day, size_W1, size_W2, size_W3, test_day_2023)
     #Stochastic Model
     Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
-
-    #data_sto = data_import_stochastic(processed_data, forecast_data, Data_index, size_W1, size_W2, size_W3,"With forecast in input")
-    data_sto = data_import_stochastic(processed_data, forecast_data, Data_index, size_W1, size_W2, size_W3)
+    data_sto = data_import_stochastic(processed_data, forecast_data, Data_index, size_W1, size_W2, size_W3,"With forecast in input")
     sto_solution = stochastic_model(data_sto)
-    #print(data_sto["f_FD1_up_t"])
-
     Bid_Results_sto = create_bid_stochastic(data_sto, sto_solution)
-    #print(Bid_Results_sto["f_lambda_FD1_up"])
-    #Test stochastic model real-time
     data_real_sto = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_sto)
     RT_results_sto = RT_operation(data_real_sto)
 
@@ -101,9 +95,8 @@ function run_feature(processed_data, forecast_data, Architecture,forgettingFacto
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
     #Feature_Selection = ["Spot","FD1_down","FD2_down","FD1_up","FD2_up","Spot^2","Spot FD1_down","Spot FD2_down","Spot FD1_up","Spot FD2_up","FD1_down^2","FD1_down FD2_down","FD1_down FD1_up","FD1_down FD2_up","FD2_down^2","FD2_down FD1_up","FD2_down FD2_up","FD1_up^2","FD1_up FD2_up","FD2_up^2"]
     
-    #data_feature = data_import_Feature(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling,"With forecast in input")
-    data_feature = data_import_Feature(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling)
-    
+    data_feature = data_import_Feature(processed_data, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling,"With forecast in input")
+
     feature_solution = Feature_Model(data_feature, Architecture)
     
     Bid_Results_feature = Create_bid_Feature(data_feature, feature_solution, Architecture)
@@ -257,8 +250,8 @@ d_train_set_range = [5]
 #moving_day_range = 62 #(within range 0:87)
 moving_day_range = 0:87 #(within range 0:87)
 forecast_range = ["1"]
-#forecast_range = ["0","1", "2", "3", "4", "5", "6"]
-#forecast_range = ["0","1","4","6"]
+#forecast_range = ["0","1","2","3"]
+
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for Feature)
 save_all = true #true/false (for saving individual results)

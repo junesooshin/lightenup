@@ -130,8 +130,8 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0)
     # Days ahead to set the forecast and test
     days_ahead = 1
 
-    # WILL ALWAYS START ON THE 3rd of January
-    start_test_idx = end_train_idx + days_ahead*24 # start for the test. Which is by default at the 3rd of january(WHICH IS WHY it is +2). May be moved to the right by days for sliding window
+   
+    start_test_idx = end_train_idx + days_ahead*24 # start for the test. Which is by default at the 2nd of january(WHICH IS WHY it is +days_ahead). May be moved to the right by days for sliding window
     
     # will always give the 24 hours of the testing day.
     end_test_idx = Total_Data_length
@@ -181,9 +181,6 @@ function Define_Training_and_Test_index(d_train_set, d_update = 0)
     return Data_index
 end
 
-#idx = Define_Training_and_Test_index(5,0)
-#print(idx["D_forecast"])
-
 function load_data(file) 
 
     dir = dirname(@__FILE__)
@@ -208,7 +205,6 @@ function load_data(file)
     else # If none of the above it is the forecast file
         filepath = string(dir , "/Processed_data/forecast_all", file , ".csv")
         data_import = DataFrame(CSV.File(filepath))
-        #data_import = data_import_all[(24*2)+1:end, :] #Cut the first two days to match test data
         return data_import
     
     end 
