@@ -645,7 +645,8 @@ def bid_plots(bid_result, model, color, save):
 
     ax1.set_ylabel('Bid quantities [MW]', fontsize=12)
     ax1.set_xlabel('Hours', fontsize=12)
-    ax1.set_xticks([1, 6, 12, 18, 24])
+    # ax1.set_xticks([1, 6, 12, 18, 24])
+    ax1.set_xticks(x)
     # ax1.legend(loc='upper left', bbox_to_anchor=(0, -0.2), ncol=3)
     ax1.set_title(model, fontsize=14) # Remove this when exporting plots for overleaf
 
@@ -716,12 +717,20 @@ def plot_training_price(with_acceptance, bid_result, model, color, save):
         X_train_FD1_up = np.array(bid_result["X"])[3,:,:].T
         X_train_FD2_up = np.array(bid_result["X"])[4,:,:].T
 
-        ax2.plot(x, X_train_FD2_up.mean(axis=1), label='X_FD2_up', marker='.', color=color['FD2_up'])
-        ax2.plot(x, X_train_FD2_dn.mean(axis=1), label='X_FD2_dn', marker='.', color=color['FD2_dn'])
-        ax2.plot(x, X_train_FD1_up.mean(axis=1), label='X_FD1_up', marker='.', color=color['FD1_up'])
-        ax2.plot(x, X_train_FD1_dn.mean(axis=1), label='X_FD1_dn', marker='.', color=color['FD1_dn'])
         ax2.plot(x, X_train_spot.mean(axis=1), label='X_spot', marker='.', color=color['DA_up'])
-        ax2.set_ylabel('Price used for training [EUR/MW]', fontsize=12)
+        if with_acceptance == True:
+            ax2.plot(x, X_train_FD2_up.mean(axis=1)*bid_result['f_FD2_y_up_t'].flatten(), label='X_FD2_up', marker='.', color=color['FD2_up'])
+            ax2.plot(x, X_train_FD2_dn.mean(axis=1)*bid_result['f_FD2_y_dn_t'].flatten(), label='X_FD2_dn', marker='.', color=color['FD2_dn'])
+            ax2.plot(x, X_train_FD1_up.mean(axis=1)*bid_result['f_FD1_y_up_t'].flatten(), label='X_FD1_up', marker='.', color=color['FD1_up'])
+            ax2.plot(x, X_train_FD1_dn.mean(axis=1)*bid_result['f_FD1_y_dn_t'].flatten(), label='X_FD1_dn', marker='.', color=color['FD1_dn'])
+            ax2.set_ylabel('Price used for training with acceptance [EUR/MW]', fontsize=12)
+
+        elif with_acceptance == False:
+            ax2.plot(x, X_train_FD2_up.mean(axis=1), label='X_FD2_up', marker='.', color=color['FD2_up'])
+            ax2.plot(x, X_train_FD2_dn.mean(axis=1), label='X_FD2_dn', marker='.', color=color['FD2_dn'])
+            ax2.plot(x, X_train_FD1_up.mean(axis=1), label='X_FD1_up', marker='.', color=color['FD1_up'])
+            ax2.plot(x, X_train_FD1_dn.mean(axis=1), label='X_FD1_dn', marker='.', color=color['FD1_dn'])
+            ax2.set_ylabel('Price used for training [EUR/MW]', fontsize=12)
 
     elif 'Sto' in model:
         W_size = bid_result['f_DA_tw_input'].shape[0]
@@ -788,7 +797,8 @@ def plot_training_price(with_acceptance, bid_result, model, color, save):
             ax2.set_ylabel('Price used for training [EUR/MW]', fontsize=12)
 
     ax2.set_xlabel('Hours', fontsize=12)
-    ax2.set_xticks([1, 6, 12, 18, 24])
+    # ax2.set_xticks([1, 6, 12, 18, 24])
+    ax2.set_xticks(x)
     ax2.legend(loc='upper left', bbox_to_anchor=(0.15, -0.15), ncol=3)
     ax2.set_title(model, fontsize=14)
 
@@ -810,7 +820,8 @@ def plot_bidding_price(bid_result, model, color, save):
 
     ax3.set_ylabel('Bid Price [EUR/MW]', fontsize=12)
     ax3.set_xlabel('Hours', fontsize=12)
-    ax3.set_xticks([1, 6, 12, 18, 24])
+    # ax3.set_xticks([1, 6, 12, 18, 24])
+    ax3.set_xticks(x)
     ax3.legend(loc='upper left', bbox_to_anchor=(0.15, -0.15), ncol=3)
     ax3.set_title(model, fontsize=14)
 
@@ -946,7 +957,9 @@ def plot_exp_and_RT_profit(results, profit_plot, save):
 
     ax6.set_ylabel('Profit [EUR]', fontsize=12)
     ax6.set_xlabel('Hours', fontsize=12)
-    ax6.set_xticks([1,6,12,18,24])
+    # ax6.set_xticks([1,6,12,18,24])
+    ax6.set_xticks(x)
+
     if 'all' in profit_plot:
         ax6.legend(loc='upper left', bbox_to_anchor=(-0.05, -0.15), ncol=4, fontsize=12)
     else:
@@ -970,7 +983,8 @@ def plot_battery_dynamics(RT_result, model, save):
     # ax5.legend(loc='center left', bbox_to_anchor=(0.15,-0.2), ncol=3)
     ax5.set_xlabel('Hours')
     ax5.set_ylabel('Power [MW]')
-    ax5.set_xticks([1,6,12,18,24])
+    # ax5.set_xticks([1,6,12,18,24])
+    ax5.set_xticks(x)
 
     ax5_1 = ax5.twinx()
     ax5_1.plot(x, RT_result['SOC']/6, color='black', label='SOC', marker = '.')
@@ -990,7 +1004,7 @@ def plot_battery_dynamics(RT_result, model, save):
 
     # plt.show()
 
-def save_plots(current_directory,Add_on_path, choose_id, save, model, with_acceptance, profit_plot):
+def save_plots(current_directory,Add_on_path, choose_id, save, model, with_acceptance, profit_plot, print_table):
     #Fix color schemes
     color = {'FD2_up': '#FFA500', # orange
             'FD2_dn': '#2986cc', # blue
@@ -1013,12 +1027,13 @@ def save_plots(current_directory,Add_on_path, choose_id, save, model, with_accep
     plot_battery_dynamics(results[model]['RT'], model, save)
     
     #Print summary
-    print('Test case: ', choose_id)
     result_summary = [["RT", results['Oracle']['RT']['profit'],results['Rule']['RT']['profit'], results['Det']['RT']['profit'], results['Sto']['RT']['profit'], results['Feature']['RT']['profit']],
                       ["Expected", sum(results['Oracle']['Bid']['obj_t']),sum(results['Rule']['Bid']['obj_t']), sum(results['Det']['Bid']['obj_t']), sum(results['Sto']['Bid']['obj_t'].flatten()), sum(results['Feature']['Bid']['obj_t'].flatten())]]
     headers = ["Oracle","Rule", "Deterministic", "Stochastic", "Feature"]
     table = tabulate(result_summary, headers, tablefmt="grid")
-    print(table)
+    if print_table == 'yes':
+        print('Test case: ', choose_id)
+        print(table)
 
     return results
 
