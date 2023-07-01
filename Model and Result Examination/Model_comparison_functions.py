@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from tabulate import tabulate
 from PIL import Image
+from matplotlib.ticker import ScalarFormatter
 
 def json_to_df(json_file_path, orient='columns'):
     """
@@ -44,7 +45,7 @@ def json_to_df(json_file_path, orient='columns'):
     return df
 
 
-def Create_Array_from_Profit(df_Exp_profit,df_RT_profit,SampleSizes, NumForecasts):
+def Create_Array_from_Profit(df_Exp_profit,df_RT_profit,SampleSizes, NumForecasts,):
     # Initialize a numpy array of size (number of different forecast accuracies,number of different train sizes, test days, models, result) with empty values
     Array = np.empty((NumForecasts, len(SampleSizes), 88, 5, 2))
 
@@ -124,6 +125,7 @@ def Count_performance_for_each_model(Array,includeOracle = False):
 def plot_each_test_day_Profit(data,models,x_axis,drawstyle,save = False):
     #x_axis = np.arange(88)
     color_models = ['C3','C0', 'C2', 'C1','C4']
+    model_labels = ['Rule','Deterministic','Stochastic','Feature','Oracle']
     y_axis_label = 'Realized Profit [\u20AC/day]'
     plot = data[models]
 
@@ -131,15 +133,28 @@ def plot_each_test_day_Profit(data,models,x_axis,drawstyle,save = False):
     fig, ax = plt.subplots(figsize=(20, 10), dpi=100)
 
     for m,model in enumerate(models):
-        ax.plot(x_axis,data[model], 'o-',color=color_models[m],drawstyle=drawstyle,markersize=10, linewidth=1)
+        if model == 'oracle':
+            ax.plot(x_axis,data[model], 'o-',color=color_models[m],drawstyle=drawstyle,markersize=10, linewidth=1,linestyle='--', marker='o')
+        else:
+            ax.plot(x_axis,data[model], 'o-',color=color_models[m],drawstyle=drawstyle,markersize=10, linewidth=1)
+    # Set the number of decimals for the y-axis tick labels
+    formatter = ScalarFormatter(useOffset=False,useMathText=True)
+    formatter.set_powerlimits((-1, 2))
+    ax.yaxis.set_major_formatter(formatter)
+    # Adjust the font size of the exponent notation
+    ax.yaxis.get_offset_text().set_fontsize(16)  # Set the font size
+    # Increase the size of the y-axis ticks
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label1.set_fontsize(12)  # Set the font size
 
-    ax.tick_params(axis='y', which='major', labelsize=15)
-    ax.tick_params(axis='x', which='major', labelsize=15)
+    ax.tick_params(axis='y', which='major', labelsize=16)
+    ax.tick_params(axis='x', which='major', labelsize=16)
 
-    ax.set_ylabel(y_axis_label, fontsize=14, labelpad=10)
-    ax.set_xlabel('Test day', fontsize=14, labelpad=10)
-    
-    ax.legend(models, loc="upper right")
+    ax.set_ylabel(y_axis_label, fontsize=22, labelpad=10)
+    ax.set_xlabel('Test day', fontsize=18, labelpad=10)
+
+
+    ax.legend(model_labels, loc='lower center', ncol=len(color_models), bbox_to_anchor=(0.5, -0.185),prop={'size': 20})
 
     if save == True:
         plt.savefig(f'Result_plots/Profit_all_test_days_plot.pdf',format="pdf", bbox_inches='tight')
@@ -147,7 +162,7 @@ def plot_each_test_day_Profit(data,models,x_axis,drawstyle,save = False):
     plt.show()
     
 
-def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, barwidth = 0.1, Forecast_label = [1,2,3], SampleSize_label = [2,4,5,7,9,11],ShowEachTestDay = False,save = False):
+def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, Selected_models = ['Rule', 'Deterministic', 'Stochastic', 'Feature'], barwidth = 0.1, Forecast_label = [1,2,3], SampleSize_label = [2,4,5,7,9,11],ShowEachTestDay = False,save = False):
 
     # Sample data
     #Array = np.random.rand(3, 6, 88, 5, 2)
@@ -157,8 +172,13 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
     
 
 
-    colors = ['C3', 'C0', 'C2', 'C1']  # Colors for the fourth dimension
+    color = ['C3', 'C0', 'C2', 'C1']  # Colors for the fourth dimension
     Model = ['Rule', 'Deterministic', 'Stochastic', 'Feature']
+
+    model_idx = [i for i, m in enumerate(Model) if m in Selected_models]
+    models = [Model[i] for i, m in enumerate(Model) if m in Selected_models]
+    colors = [color[i] for i, m in enumerate(Model) if m in Selected_models]
+
     
     
     mean_values = np.mean(Array, axis=2)
@@ -175,10 +195,9 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
         x_axis_label = 'Sample size'
         x_axis = np.arange(len(SampleSize_selection))
         xtick_names = SampleSize_label
-        colors = ['C2', 'C1']  # Colors for the fourth dimension
-        Model_mod = ['Sto', 'Feature']
-        s_m_idx = [i for i, m in enumerate(Model) if m in Model_mod]
-        bar_count = (len(Model_mod)) * Array.shape[4]  # Number of bars in each group (5-1)*2
+
+        bar_count = (len(models)) * Array.shape[4]  # Number of bars in each group (5-1)*2
+
 
     else:
         x_axis_label = '' 
@@ -188,18 +207,20 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
         x_axis = [Forecastidx]
         bar_count = (Array.shape[3]-1) * Array.shape[4]  # Number of bars in each group (5-1)*2
 
+
         
     
 
     # Fixed settings
     #ax.set_ylabel('\u20AC/day')
+    
     y_axis_label = 'Profit [\u20AC/day]'
     test_days = np.arange(Array.shape[2])
 
 
-    legend_labels = Model
+    legend_labels = models
     legend_colors = colors
-    linestyle = '-'
+    linestyle = '--'
     linecolor = 'C4'
     linelabel = 'Oracle'
     edgecolor = "black"
@@ -265,16 +286,16 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
                     if PlotCase == 'Forecasts':
                         
                         bar_left = f + bar_list[count_k]
-                        j_mod = j
+                        j_mod = model_idx[j]
 
                     elif PlotCase == 'Sample size':
                         bar_left = s + bar_list[count_k]
-                        j_mod = s_m_idx[j] # Just so only specified models are showed
+                        j_mod = model_idx[j] # Just so only specified models are showed
 
                     else:
 
                         bar_left = bar_list[count_k]
-                        j_mod = j
+                        j_mod = model_idx[j]
 
 
                     
@@ -305,8 +326,8 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
     
     if xtick_names != 'off':
         ax.set_xticks(x_axis)
-        ax.set_xticklabels(xtick_names)
-        ax.set_xlabel(x_axis_label)
+        ax.set_xticklabels(xtick_names, fontsize=16)
+        ax.set_xlabel(x_axis_label, fontsize=16, labelpad=10)
     else:
         # Remove x axis
             
@@ -317,8 +338,14 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
     # Set the y-axis tick size
     ax.tick_params(axis='y', which='major', labelsize=20)
     
-    ax.set_ylabel(y_axis_label, fontsize=14, labelpad=10)
-    ax.yaxis.set_tick_params(labelsize=10)
+    ax.set_ylabel(y_axis_label, fontsize=16, labelpad=10)
+    # Set the y-axis tick formatter
+    formatter = ScalarFormatter(useMathText=True)
+    formatter.set_powerlimits((-1, 2))  # Adjust the power limits as needed
+    plt.gca().yaxis.set_major_formatter(formatter)
+    ax.yaxis.get_offset_text().set_fontsize(16)  # Set the font size
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.xaxis.set_tick_params(labelsize=14)
 
     # Create legend for the bars
     legend_handles = []
@@ -335,9 +362,10 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
 
     # Create legend for the horizontal line
     legend_handles.append(plt.Line2D([0], [0], color=linecolor, linestyle=linestyle, label=linelabel,linewidth=linewidth))
-
+    
     # Show the legend
-    ax.legend(handles=legend_handles,bbox_to_anchor=(1.02, 0.9), loc='upper left')
+    ax.legend(handles=legend_handles,bbox_to_anchor=(1.02, 0.9), loc='upper left',prop={'size': 14})
+
 
 
     if save == True:
@@ -346,6 +374,126 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
     plt.show()
 
 
+
+def Collect_bid_results(current_directory,Add_on_path,forecast_idx,SampleSize_idx,Acceptance_idx):
+    
+    #forecast_idx = 1
+    #SampleSize_idx = 5
+    #acceptance_criteria_factor_range = ["1.00","1.05","1.1","1.2"]
+    acceptance_count = ["acceptance_FD2_down","acceptance_FD2_up","acceptance_FD1_down","acceptance_FD1_up"]
+    bid_quantities   = ["b_FD2_dn","b_FD2_up","b_DA_dn","b_DA_up","b_FD1_dn","b_FD1_up"]
+    models = ["Rule","Det","Sto","Feature","Oracle"]
+    Array_Acceptance = np.empty((len(acceptance_count),24, 88, 5,len(Acceptance_idx)))
+    Array_Bid = np.empty((len(bid_quantities),24, 88, 5))
+    
+    for ac,acc in enumerate(Acceptance_idx):
+        if len(Acceptance_idx) > 1:
+            ids = [f'acc_{acc}_f{forecast_idx}_d{SampleSize_idx}_upd{d}_t{d+1}' for d in range(0,88)]
+        else:
+            ids = [f'f{forecast_idx}_d{SampleSize_idx}_upd{d}_t{d+1}' for d in range(0,88)]
+
+
+
+        # Load each id at a time
+        for d,id in enumerate(ids):
+            results = import_test_case(current_directory, Add_on_path, id)
+            #print("Import ", id)
+
+
+            # Gather all the information:
+            for m,model in enumerate(models):
+                # Acceptance
+                for a,acc in enumerate(acceptance_count):
+                    #print(results[model]['RT'][acc])
+                    Array_Acceptance[a,:,d,m,ac] = results[model]['RT'][acc]
+
+                # Bid quantity
+                for b,bid in enumerate(bid_quantities):
+                    #print(results[model]['Bid'][bid])
+                    Array_Bid[b,:,d,m] = results[model]['Bid'][bid]
+    
+    return Array_Acceptance, Array_Bid
+
+
+
+def Plot_average_bid_quantities(Array_Acceptance,Array_Bid):
+    Acceptance_mean = np.mean(Array_Acceptance, axis=2)
+    Acceptance_std = np.std(Array_Acceptance, axis=2)
+    Bid_mean = np.mean(Array_Bid, axis=2)
+    Bid_std = np.std(Array_Bid, axis=2)
+
+    x = np.arange(1, 25)
+
+    # Determine the number of subplots based on b iterations
+    bid_quantities = ["b_FD2_dn", "b_FD2_up", "b_DA_dn", "b_DA_up", "b_FD1_dn", "b_FD1_up"]
+    bid_quantities_label = ["$FD2\\downarrow$", "$FD2\\uparrow$", "$DA\\downarrow$", "$DA\\uparrow$", "$FD1\\downarrow$", "$FD1\\uparrow$"]
+
+    models = ["Rule", "Deterministic", "Stochastic", "Feature", "Oracle"]
+    model_colors = ['C3','C0', 'C2', 'C1','C4']
+    linestyles = ['-','-','-','-','--']
+    num_subplots = len(bid_quantities)
+
+    # Create subplots
+    fig, axs = plt.subplots(3, 2, figsize=(12, 18))
+
+    # Iterate over each bid and create a subplot
+    for b, bid in enumerate(bid_quantities):
+        row = b // 2  # Determine the row index
+        col = b % 2  # Determine the column index
+
+        for m, model in enumerate(models):
+            axs[row, col].plot(x, Bid_mean[b, :, m], label=model,color=model_colors[m], linestyle = linestyles[m],linewidth=2.5)
+            # axs[row, col].scatter(x, Acceptance_mean[1, :, m], label=model)  # Uncomment if needed
+
+        axs[row, col].set_title(bid_quantities_label[b], fontsize=16)  # Set subplot title
+        #axs[row, col].legend()
+
+        # Remove x-axis for subplots that are not in the last row
+        if row != axs.shape[0] - 1:
+            axs[row, col].set_xticks([])
+            axs[row, col].set_xlabel('')
+        else:
+            axs[row, col].set_xticks([1,5,10,15,20,24])
+            axs[row, col].set_xlabel('Time [h]')
+
+        # Set y-axis label for subplots in the first column
+        if col == 0:
+            axs[row, col].set_ylabel('Average bid quantity [MW]')
+
+        # Set the number of decimals for the y-axis tick labels
+        formatter = ScalarFormatter(useOffset=False,useMathText=True)
+        formatter.set_powerlimits((-1, 2))
+        axs[row, col].yaxis.set_major_formatter(formatter)
+        axs[row, col].yaxis.set_major_formatter('{x:.2f}')  # Set 2 decimals, adjust as needed
+
+            # Set the y-axis tick formatter
+        #formatter = ScalarFormatter(useMathText=True)
+        #formatter.set_powerlimits((-1, 2))  # Adjust the power limits as needed
+        #plt.gca().yaxis.set_major_formatter(formatter)
+
+        
+    # Remove unused subplots if there are fewer bid quantities than the total number of subplots
+    if num_subplots < axs.size:
+        for i in range(num_subplots, axs.size):
+            axs.flat[i].set_visible(False)
+
+    # Create a common legend outside the subplots
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    legend = fig.legend(handles, labels, loc='lower center', ncol=len(models), bbox_to_anchor=(0.5, -0.03),
+                        prop={'size': 16})  # Adjust the fontsize of the legend here
+
+
+    # Adjust the fontsize of the axis ticks and labels
+    for ax in axs.flat:
+        ax.tick_params(axis='both', which='both', labelsize=14)  # Adjust the fontsize of the axis ticks here
+        ax.xaxis.label.set_fontsize(16)  # Adjust the fontsize of the x-axis label here
+        ax.yaxis.label.set_fontsize(16)  # Adjust the fontsize of the y-axis label here
+
+
+
+    plt.tight_layout()  # Adjust spacing between subplots
+    plt.savefig('Bid_quantities.pdf', format="pdf", bbox_inches="tight")
+    plt.show()
 
 
 def plot_Profit_Test_For_Forecast(Array, xtick_names,SampleSize_index, marker_size = 2, marker_size_2 = 20):
