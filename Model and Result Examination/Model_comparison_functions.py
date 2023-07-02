@@ -47,7 +47,7 @@ def json_to_df(json_file_path, orient='columns'):
 
 def Create_Array_from_Profit(df_Exp_profit,df_RT_profit,SampleSizes, NumForecasts,):
     # Initialize a numpy array of size (number of different forecast accuracies,number of different train sizes, test days, models, result) with empty values
-    Array = np.empty((NumForecasts, len(SampleSizes), 88, 5, 2))
+    Array = np.empty((NumForecasts, len(SampleSizes), 88, 5, 2, 1))
 
     for col in df_Exp_profit.columns:
         
@@ -75,17 +75,17 @@ def Create_Array_from_Profit(df_Exp_profit,df_RT_profit,SampleSizes, NumForecast
 
 
 
-        Array[(f-1),(m),(d-1),0,0] = df_Exp_profit[col]['rule']
-        Array[(f-1),(m),(d-1),1,0] = df_Exp_profit[col]['det']
-        Array[(f-1),(m),(d-1),2,0] = df_Exp_profit[col]['sto']
-        Array[(f-1),(m),(d-1),3,0] = df_Exp_profit[col]['feature']
-        Array[(f-1),(m),(d-1),4,0] = df_Exp_profit[col]['oracle']
+        Array[(f-1),(m),(d-1),0,0,0] = df_Exp_profit[col]['rule']
+        Array[(f-1),(m),(d-1),1,0,0] = df_Exp_profit[col]['det']
+        Array[(f-1),(m),(d-1),2,0,0] = df_Exp_profit[col]['sto']
+        Array[(f-1),(m),(d-1),3,0,0] = df_Exp_profit[col]['feature']
+        Array[(f-1),(m),(d-1),4,0,0] = df_Exp_profit[col]['oracle']
 
-        Array[(f-1),(m),(d-1),0,1] = df_RT_profit[col]['rule']
-        Array[(f-1),(m),(d-1),1,1] = df_RT_profit[col]['det']
-        Array[(f-1),(m),(d-1),2,1] = df_RT_profit[col]['sto']
-        Array[(f-1),(m),(d-1),3,1] = df_RT_profit[col]['feature']
-        Array[(f-1),(m),(d-1),4,1] = df_RT_profit[col]['oracle']
+        Array[(f-1),(m),(d-1),0,1,0] = df_RT_profit[col]['rule']
+        Array[(f-1),(m),(d-1),1,1,0] = df_RT_profit[col]['det']
+        Array[(f-1),(m),(d-1),2,1,0] = df_RT_profit[col]['sto']
+        Array[(f-1),(m),(d-1),3,1,0] = df_RT_profit[col]['feature']
+        Array[(f-1),(m),(d-1),4,1,0] = df_RT_profit[col]['oracle']
         
     return Array
 
@@ -162,7 +162,7 @@ def plot_each_test_day_Profit(data,models,x_axis,drawstyle,save = False):
     plt.show()
     
 
-def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, Selected_models = ['Rule', 'Deterministic', 'Stochastic', 'Feature'], barwidth = 0.1, Forecast_label = [1,2,3], SampleSize_label = [2,4,5,7,9,11],ShowEachTestDay = False,save = False):
+def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Deterministic', 'Stochastic', 'Feature','Oracle'], x_axis_label = "Forecasts", x_axis_selection = [0,1,2], x_axis_tick_label = [1,2,3], Selected_Profit = ['Expected', 'Realized'], barwidth = 0.1, pdf_name = 'Profit_Bar_plot', ShowEachTestDay = False,save = False):
 
     # Sample data
     #Array = np.random.rand(3, 6, 88, 5, 2)
@@ -170,63 +170,12 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
     #Forecast_names = [1,2,3]
     #SampleSize_names = [2,5,7,9,11]
     
-
-
+    
+    # Default settings
     color = ['C3', 'C0', 'C2', 'C1']  # Colors for the fourth dimension
     Model = ['Rule', 'Deterministic', 'Stochastic', 'Feature']
-
-    model_idx = [i for i, m in enumerate(Model) if m in Selected_models]
-    models = [Model[i] for i, m in enumerate(Model) if m in Selected_models]
-    colors = [color[i] for i, m in enumerate(Model) if m in Selected_models]
-
-    
-    
-    mean_values = np.mean(Array, axis=2)
-    std_values = np.std(Array, axis=2)
-
-    if PlotCase == 'Forecasts':
-        x_axis_label = 'Forecasts'
-        x_axis = np.arange(len(Forecast_selection))
-        xtick_names = Forecast_label
-        bar_count = (Array.shape[3]-1) * Array.shape[4]  # Number of bars in each group (5-1)*2
-        
-
-    elif  PlotCase == 'Sample size':
-        x_axis_label = 'Sample size'
-        x_axis = np.arange(len(SampleSize_selection))
-        xtick_names = SampleSize_label
-
-        bar_count = (len(models)) * Array.shape[4]  # Number of bars in each group (5-1)*2
-
-
-    else:
-        x_axis_label = '' 
-        
-        xtick_names = 'off'
-        Forecastidx = 1 # [1,2,3]
-        x_axis = [Forecastidx]
-        bar_count = (Array.shape[3]-1) * Array.shape[4]  # Number of bars in each group (5-1)*2
-
-
-        
-    
-
-    # Fixed settings
-    #ax.set_ylabel('\u20AC/day')
-    
-    y_axis_label = 'Profit [\u20AC/day]'
-    test_days = np.arange(Array.shape[2])
-
-
-    legend_labels = models
-    legend_colors = colors
-    linestyle = '--'
-    linecolor = 'C4'
-    linelabel = 'Oracle'
-    edgecolor = "black"
-    fill_patterns_label = ['Expected', 'Realized']  # Fill patterns for the fifth dimension
-    fill_patterns = ['', '\\']  # Fill patterns for the fifth dimension
-
+    Profit_labels = ['Expected', 'Realized']  # Fill patterns for the fifth dimension
+    Profit_patterns = ['', '\\']  # Fill patterns for the fifth dimension
     # /   - diagonal hatching
     # \   - back diagonal
     # |   - vertical
@@ -237,13 +186,46 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
     # O   - large circle
     # .   - dots
     # *   - stars
+    bar_count = (len(Selected_models)) * len(Selected_Profit) # Number of bars in each group (5-1)*2
+    if "Oracle" in Selected_models:
+        linestyle = '--'
+        linecolor = 'C4'
+        linelabel = 'Oracle'
+        bar_count = (len(Selected_models)-1) * len(Selected_Profit) # Number of bars in each group (5-1)*2
+        
 
+    # From Selected_models and Selected_Profit specify necessary settings aligned with the default
+    model_idx = [i for i, m in enumerate(Model) if m in Selected_models]
+    models = [Model[i] for i, m in enumerate(Model) if m in Selected_models]
+    colors = [color[i] for i, m in enumerate(Model) if m in Selected_models]
+    profit_idx = [i for i, p in enumerate(Profit_labels) if p in Selected_Profit]
+    fill_patterns_label = [Profit_labels[i] for i, p in enumerate(Profit_labels) if p in Selected_Profit]
+    fill_patterns = [Profit_patterns[i] for i, p in enumerate(Profit_labels) if p in Selected_Profit]  # Fill patterns for the fifth dimension
+    
+    mean_values = np.mean(Array, axis=2)
+    std_values = np.std(Array, axis=2)
 
+    if PlotCase == "":
+        x_axis_label = '' 
+        xtick_names = 'off'
+        x_axis = [1]
+        
+    else:
+        x_axis = np.arange(len(x_axis_selection))
+        xtick_names = x_axis_tick_label
+
+    # Fixed settings
+
+    y_axis_label = 'Profit [\u20AC/day]'
+    test_days = np.arange(Array.shape[2])
+
+    legend_labels = models
+    legend_colors = colors
+
+    edgecolor = "black"
     linewidth = 4
     
- 
-
-    #bar_list = [-(barwidth * bar_count / 2) + i * barwidth for i in range(bar_count)]
+    # Build the bar sizing and spacing
     bar_list = [i*0 for i in range(bar_count)]
     spacing = barwidth/10
     for i in range(bar_count):
@@ -254,70 +236,79 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
         
         if i % 2 == 0:
             bar_list[i] = bar_list[i] + spacing
-            
-            
         
     size_around_tick = barwidth * bar_count / 2 + barwidth/2   
 
-    # Compute the means along the third dimension
-
-
+    print(bar_list)
 
     # Create the plot
     fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
 
+    # Build the oracle model:
+
     # Plot value of the oracle model
-    mean_value = np.mean(Array[Forecast_selection, SampleSize_selection, :, 4, 1])
-    lines = ax.hlines(mean_value, 0 - size_around_tick + 4 *spacing, len(x_axis) - 1 + size_around_tick, color=linecolor, linestyle=linestyle, linewidth=linewidth)
+    if "Oracle" in Selected_models:
+        mean_value = np.mean(Array[0, 0, :, 4, 1,0])
+        lines = ax.hlines(mean_value, 0 - size_around_tick + 4 *spacing, len(x_axis) - 1 + size_around_tick, color=linecolor, linestyle=linestyle, linewidth=linewidth)
 
 
-    for f,forecast  in enumerate(Forecast_selection):
+    for x,xaxis  in enumerate(x_axis_selection):
+        count_j = 0
+        count_k = 0
+        for j, color in enumerate(colors):
+            for k, fill_pattern in enumerate(fill_patterns):
+                # construct where on the x axis the bar is located
 
-        for s,sample  in enumerate(SampleSize_selection):
-            count_j = 0
-            count_k = 0
-            for j, color in enumerate(colors):
-                for k, fill_pattern in enumerate(fill_patterns):
-                    # construct where on the x axis the bar is located
+                # To get a little bit of spacing after each model
+                
+                j_mod = model_idx[j]
+                k_mod = profit_idx[k]
 
-                    # To get a little bit of spacing after each model
-                    
+                if PlotCase == 'Forecasts':
+                    bar_left = x + bar_list[count_k]
+                    f = x
+                    s = 0
+                    m = 0   
 
-                    if PlotCase == 'Forecasts':
+                elif PlotCase == 'Sample size':
+                    bar_left = x + bar_list[count_k]
+                    f = 0
+                    s = x
+                    m = 0
+                
+                elif PlotCase == 'Model Exploration':
+                    bar_left = x + bar_list[count_k]
+                    f = 0
+                    s = 0
+                    m = x
+
+                else:
+                    bar_left = bar_list[count_k]
+                    f = 0
+                    s = 0
+                    m = 0
+
+
+                
+                # Define the height of the bar
+                bar_height = mean_values[f,s,j_mod,k_mod,m]
+                error_value = std_values[f,s,j_mod,k_mod,m]
+
+                
+
+                ax.bar(bar_left, bar_height, width=barwidth, color=color, hatch=fill_pattern, align='edge', edgecolor=edgecolor)
+
+                x_position = bar_left + barwidth/2
+                ax.errorbar(x_position, bar_height, yerr=error_value, fmt='none', ecolor='black', capsize=4)
+
+                if ShowEachTestDay == True:
+                    for d,val in enumerate(test_days):
+                        #print("(",bar_left,",",Array[x,2,d,j,k],")")
                         
-                        bar_left = f + bar_list[count_k]
-                        j_mod = model_idx[j]
+                        ax.scatter(x_position,Array[f,s,j_mod,k_mod],s=2, edgecolor=edgecolor, color=color)
 
-                    elif PlotCase == 'Sample size':
-                        bar_left = s + bar_list[count_k]
-                        j_mod = model_idx[j] # Just so only specified models are showed
-
-                    else:
-
-                        bar_left = bar_list[count_k]
-                        j_mod = model_idx[j]
-
-
-                    
-                    # Define the height of the bar
-                    bar_height = mean_values[forecast,sample,j_mod,k]
-                    error_value = std_values[forecast,sample,j_mod,k]
-
-                    
-
-                    ax.bar(bar_left, bar_height, width=barwidth, color=color, hatch=fill_pattern, align='edge', edgecolor=edgecolor)
-
-                    x_position = bar_left + barwidth/2
-                    ax.errorbar(x_position, bar_height, yerr=error_value, fmt='none', ecolor='black', capsize=4)
-
-                    if ShowEachTestDay == True:
-                        for d,val in enumerate(test_days):
-                            #print("(",bar_left,",",Array[x,2,d,j,k],")")
-                            
-                            ax.scatter(x_position,Array[forecast,sample,d,j,k],s=2, edgecolor=edgecolor, color=color)
-
-                    count_k = count_k + 1
-                count_j = count_j + 1
+                count_k = count_k + 1
+            count_j = count_j + 1
 
 
 
@@ -360,8 +351,9 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
     for label, pattern in zip(fill_patterns_label, fill_patterns): 
         legend_handles.append(plt.Rectangle((0, 0), 1, 1, facecolor='white', edgecolor=edgecolor,  hatch=pattern, label=label))
 
-    # Create legend for the horizontal line
-    legend_handles.append(plt.Line2D([0], [0], color=linecolor, linestyle=linestyle, label=linelabel,linewidth=linewidth))
+    if "Oracle" in Selected_models:
+        # Create legend for the horizontal line
+        legend_handles.append(plt.Line2D([0], [0], color=linecolor, linestyle=linestyle, label=linelabel,linewidth=linewidth))
     
     # Show the legend
     ax.legend(handles=legend_handles,bbox_to_anchor=(1.02, 0.9), loc='upper left',prop={'size': 14})
@@ -369,7 +361,7 @@ def plot_profit_Test(Array, PlotCase, Forecast_selection, SampleSize_selection, 
 
 
     if save == True:
-        plt.savefig(f'Result_plots/Profit_Bar_plot.pdf',format="pdf", bbox_inches='tight')
+        plt.savefig(f'Result_plots/'+ pdf_name +'.pdf',format="pdf", bbox_inches='tight')
     # Show the plot
     plt.show()
 
