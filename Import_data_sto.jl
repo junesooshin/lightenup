@@ -1,6 +1,6 @@
 #data import function for stochastic model
 
-function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, W3,Model_configuration = "Without forecast in input")
+function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, W3,temporal = false,correlation = false,Model_configuration = "Without forecast in input")
     # Import parameters for stochastic model
     Data_Battery = Battery_Specifications("Samsung_SDI_E3_R135_Battery")
 
@@ -75,6 +75,62 @@ function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, 
 
     end
 
+    # Create the probabilities for each scenario
+    
+    pi1 = zeros(W1)
+    pi2 = zeros(W1,W2)
+    pi3 = zeros(W1,W2,W3)
+
+    #### Putting weights on it:
+    if temporal == true
+        temporal_relation = [0.8, 0.4, 0.3, 0.2, 0.1, 0.8]
+        temporal_relation = temporal_relation / sum(temporal_relation)
+
+    else
+        temporal_relation = ones(W1) .* 1/W1
+    end
+    if correlation == true
+        val_FD2_DA = (0.29 + 0.24) / 2
+        val_DA_FD1 = (0.3 + 0.18) / 2
+        val_FD2_FD1 = (0.6 + 0.49) / 2
+    else
+        val_FD2_DA = 1/W1
+        val_DA_FD1 = 1/W2
+        val_FD2_FD1 = 1/W3
+    end
+
+    FD2_DA = ones((W1,W2) )*val_FD2_DA
+    DA_FD1 = ones((W2,W3) )*val_DA_FD1
+    FD2_FD1 = ones((W1,W3) )*val_FD2_FD1
+    
+    # Construct pi1
+    for fd2 in 1:W1
+        pi1[fd2] = temporal_relation[fd2]
+    end
+    pi1 /= sum(pi1)
+
+    # Construct pi2
+    for fd2 in 1:W1
+        for da in 1:W2  
+            pi2[fd2,da] = FD2_DA[fd2, da] * temporal_relation[abs(fd2 - da)+1]
+        end
+    end
+    pi2 /= sum(pi2)
+
+    # Construct pi3
+    for fd2 in 1:W1
+        for da in 1:W2
+            for fd1 in 1:W3
+                fd2_da_prob = FD2_DA[fd2, da] * temporal_relation[abs(fd2 - da)+1]
+                da_fd1_prob = DA_FD1[da, fd1] * temporal_relation[abs(fd1 - da)+1]
+                fd2_fd1_prob = FD2_FD1[fd2, fd1] * temporal_relation[abs(fd2 - fd1)+1]
+                pi3[fd2, da, fd1] = fd2_da_prob * da_fd1_prob * fd2_fd1_prob
+            end
+        end
+    end
+    pi3 /= sum(pi3)
+
+
     # Bid prices
     f_DA_t = f_DA_t
     f_FD1_up_t = f_lambda_FD1_up_t
@@ -100,6 +156,9 @@ function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, 
                 "size_W1" => W1,
                 "size_W2" => W2,
                 "size_W3" => W3, 
+                "pi1" => pi1,
+                "pi2" => pi2,
+                "pi3" => pi3,
 
                 # Prices sent as bids from Stochastic 
                 "f_FD1_dn" => vol_avg_price_FD1_down,

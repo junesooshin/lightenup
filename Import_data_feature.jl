@@ -1,6 +1,6 @@
 #data import functions for Feature model
 
-function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Data_index, Feature_Selection, scaling, Model_configuration = "Without forecast in input")
+function data_import_Feature(Data_all, forecast_data, Data_index, Feature_Selection, scaling,temporal = false, Model_configuration = "Without forecast in input")
 
     N_train_flat = Data_index["N_train_flat"]
     D_train = Data_index["D_train"]
@@ -12,13 +12,72 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
 
     #Features
     F = length(Feature_Selection)
+    
     # Training data:
     Data_train = Data_all[N_train_flat, :]
+
+    #println(Data_train[5:7,2])
+    #println(Data_train[(5+24):(7+24),2])
+    #=
+    if temporal == true
+        temporal_relation = [0.8, 0.4, 0.3, 0.2, 0.1, 0.8]
+        temporal_relation = temporal_relation / sum(temporal_relation)
+        block_size = 24
+        num_blocks = size(Data_train, 1) ÷ block_size
+        
+        num_features = size(Data_train, 2)
+
+        for i in 1:num_blocks
+            start_index = (i - 1) * block_size + 1
+            end_index = i * block_size
+            
+            for f in 1:num_features
+                #println(temporal_relation[i])
+                #println(Data_train[start_index:end_index, :] .* temporal_relation[i])
+                #map!(x -> x * temporal_relation[i], Data_train[start_index:end_index, :] )
+                #Data_train[start_index:end_index, f] = 
+                println(Data_train[5:7, f] .* temporal_relation[i])
+                Data_train[5:7, f] = Data_train[5:7, f] .* temporal_relation[i]
+                println(Data_train[5:7, f])
+            end
+        end
+        #println(Data_train[5:7,2])
+        #println(Data_train[(5+24):(7+24),2])
+    end=#
+    if temporal
+        temporal_relation = [0.8, 0.4, 0.3, 0.2, 0.1, 0.8]
+        temporal_relation = temporal_relation / sum(temporal_relation)
+        block_size = 24
+        num_blocks = size(Data_train, 1) ÷ block_size
+        num_features = size(Data_train, 2)
+    
+        # Convert temporal_relation to a 2D array
+        #temporal_relation = repeat(temporal_relation, outer=(block_size, 1))
+    
+        for i in 1:num_blocks
+            start_index = (i - 1) * block_size + 1
+            end_index = i * block_size
+            
+            for f in 1:num_features
+                #temp_array = similar(Data_train[start_index:end_index, f])  # Create a temporary array
+                #@views temp_array .= Data_train[start_index:end_index, f] .* temporal_relation[i]  # Perform element-wise multiplication
+                #Data_train[start_index:end_index, f] .= temp_array  # Assign the result back to Data_train
+                
+                for h in start_index:end_index
+                    temp_array = similar(Data_train[h, f])  # Create a temporary array
+                    @views temp_array = Data_train[h, f] * temporal_relation[i]  # Perform element-wise multiplication
+                    Data_train[h, f] = temp_array  # Assign the result back to Data_train
+                end
+            end
+        end
+    end
+
     if scaling == true
-        train_df, scaled_train_parameters = min_max_scaler(Data_train, "train", false)
+        train_df, Min_train, Max_train = min_max_scaler(Data_train, "train", false,false)
     elseif scaling == false
         train_df = Data_train
     end
+
     X = reshape(Matrix(train_df[:,Feature_Selection]), (length(H), length(D_train), F))
     X_train_f = reshape(Matrix(forecast_data[N_train_flat,Feature_Selection]), (length(H), length(D_train), F))
 
@@ -28,11 +87,11 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
 
     # Forgetting factor (D)
     # Column names [1.0,0.9,0.96,0.98,0.985,0.99,0.995,0.999]
-    forgetting = forgettingFactor_data[D_train,"1.0"]
+    #forgetting = forgettingFactor_data[D_train,"1.0"]
 
     # Forecast data
     if scaling == true
-        forecast_df, scaled_forecast_parameters = min_max_scaler(forecast_data, "test", scaled_train_parameters)
+        forecast_df, Min_forecast,Max_forecast = min_max_scaler(forecast_data, "test", Max_train,Min_train)
     elseif scaling == false
         forecast_df = forecast_data
     end
@@ -74,8 +133,6 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
     f_FD1_up_percentage = reshape(forecast_data[N_forecast_flat,"FD1_down_percentage"], (length(H)) )  
     f_FD2_down_percentage = reshape(forecast_data[N_forecast_flat,"FD2_down_percentage"], (length(H)) ) 
 
-
-
     # Modify training if forecast is included in training for Feature models
     if Model_configuration == "With forecast in input"
 
@@ -99,8 +156,6 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
         f_FD1_y_up_t = cat(f_FD1_y_up_t, f_FD1_up_percentage,dims=(2))
         f_FD2_y_up_t = cat(f_FD2_y_up_t, f_FD2_up_percentage,dims=(2))
         
-        
-
         @info("Forecast added to input for optimization of the Feature model!")
 
     end
@@ -117,7 +172,7 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
     p_dis_max = Data_Battery["p_dis_max"]
     p_ch_max = Data_Battery["p_ch_max"]
     if scaling == true
-        Cost_per_cycle = (Data_Battery["Cost_per_cycle"]- scaled_train_parameters["min_spot"])/(scaled_train_parameters["max_spot"]-scaled_train_parameters["min_spot"])
+        Cost_per_cycle = (Data_Battery["Cost_per_cycle"]- Min_train["Spot"])/(Max_train["Spot"]-Min_train["Spot"])
     elseif scaling == false
         Cost_per_cycle = Data_Battery["Cost_per_cycle"]
     end
@@ -135,10 +190,10 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
     "f_DA_t" => f_DA_t,
     "a_up_t" => a_up_t, "a_dn_t" => a_dn_t, 
     "SOC_0" => SOC_0, "SOC_max" => SOC_max, "eta_dis" => eta_dis,"eta_ch" => eta_ch,
-    "p_dis_max" => p_dis_max,"p_ch_max" => p_ch_max, "Cost_per_cycle" => Cost_per_cycle,
-    scaling == true ? "scaled_train_parameters" => scaled_train_parameters : "scaled_train_parameters" => NaN,
-    scaling == true ? "scaled_forecast_parameters" => scaled_forecast_parameters : "scaled_forecast_parameters" => NaN,
-    "forgettingFactor" => forgetting 
+    "p_dis_max" => p_dis_max,"p_ch_max" => p_ch_max, "Cost_per_cycle" => Cost_per_cycle
+    #scaling == true ? "scaled_train_parameters" => scaled_train_parameters : "scaled_train_parameters" => NaN,
+    #scaling == true ? "scaled_forecast_parameters" => scaled_forecast_parameters : "scaled_forecast_parameters" => NaN,
+    #"forgettingFactor" => forgetting 
     )
     
     @info("Data import for feature model complete!")
@@ -146,57 +201,31 @@ function data_import_Feature(Data_all, forecast_data, forgettingFactor_data, Dat
 end
 
 
-function min_max_scaler(df, dataset, training_parameters)
-    #Add features if they need to be scaled!
+function min_max_scaler(df, dataset, training_Max_parameters,training_Min_parameters)
+
+    featurenames = names(df)
+    Scaled_features = zeros(( size(df, 1),length(featurenames)))
+    Scaled_features = DataFrame(Scaled_features, Symbol.(featurenames))
 
     if dataset == "train" 
-        max_spot = maximum(df[:,"Spot"])
-        min_spot = minimum(df[:,"Spot"])
-        max_FD1_down = maximum(df[:,"FD1_down"])
-        min_FD1_down = minimum(df[:,"FD1_down"])
-        max_FD2_down = maximum(df[:,"FD2_down"])
-        min_FD2_down = minimum(df[:,"FD2_down"])
-        max_FD1_up = maximum(df[:,"FD1_up"])
-        min_FD1_up = minimum(df[:,"FD1_up"])
-        max_FD2_up = maximum(df[:,"FD2_up"])
-        min_FD2_up = minimum(df[:,"FD2_up"])
+
+        min_values = minimum.(eachcol(df))
+        Min = Dict(zip(featurenames, min_values))
+
+        max_values = maximum.(eachcol(df))
+        Max = Dict(zip(featurenames, max_values))
+        
     elseif dataset == "test" #Pass transformation from train data
-        max_spot = training_parameters["max_spot"]
-        min_spot = training_parameters["min_spot"]
-        max_FD1_down = training_parameters["max_FD1_down"]
-        min_FD1_down = training_parameters["min_FD1_down"]
-        max_FD2_down = training_parameters["max_FD2_down"]
-        min_FD2_down = training_parameters["min_FD2_down"]
-        max_FD1_up = training_parameters["max_FD1_up"]
-        min_FD1_up = training_parameters["min_FD1_up"]
-        max_FD2_up = training_parameters["max_FD2_up"]
-        min_FD2_up = training_parameters["min_FD2_up"]
+
+        # Use min and max from training
+        Min = training_Min_parameters
+        Max = training_Max_parameters
+
+    end
+
+    for feature in featurenames
+        Scaled_features[:,feature] = (df[:,feature] .- Min[feature]) ./ (Max[feature]-Min[feature])
     end
     
-    spot_scaled = (df[:,"Spot"] .- min_spot) ./ (max_spot-min_spot)
-    FD1_down_scaled = (df[:,"FD1_down"] .- min_FD1_down) ./ (max_FD1_down-min_FD1_down)
-    FD2_down_scaled = (df[:,"FD2_down"] .- min_FD2_down) ./ (max_FD2_down-min_FD2_down)
-    FD1_up_scaled = (df[:,"FD1_up"] .- min_FD1_up) ./ (max_FD1_up-min_FD1_up)
-    FD2_up_scaled = (df[:,"FD2_up"] .- min_FD2_up) ./ (max_FD2_up-min_FD2_up)
-
-    scaled = Dict("Spot" => spot_scaled,
-                  "FD1_down" => FD1_down_scaled,
-                  "FD2_down" => FD2_down_scaled,
-                  "FD1_up" => FD1_up_scaled,
-                  "FD2_up" => FD2_up_scaled)
-
-    df_scaled = DataFrame(scaled)
-    
-    scaled_parameters = Dict("max_spot" => max_spot,
-                            "min_spot" => min_spot,
-                            "max_FD1_down" => max_FD1_down,
-                            "min_FD1_down" => min_FD1_down,
-                            "max_FD2_down" => max_FD2_down,
-                            "min_FD2_down" => min_FD2_down,
-                            "max_FD1_up" => max_FD1_up,
-                            "min_FD1_up" => min_FD1_up,
-                            "max_FD2_up" => max_FD2_up,
-                            "min_FD2_up" => min_FD2_up) 
-    
-    return df_scaled, scaled_parameters
+    return Scaled_features, Min, Max
 end

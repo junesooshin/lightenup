@@ -49,11 +49,6 @@ function data_import_real(data_import, Data_index, test_day, Bid_Results,accepta
         end
     end
 
-    #acceptance_FD1_up = [FD1_up_bid_price[i] <= FD1_up_price[i] ? 1 : 0 for i in 1:24]
-    #acceptance_FD1_down = [FD1_down_bid_price[i] <= FD1_down_price[i] ? 1 : 0 for i in 1:24]
-    #acceptance_FD2_up = [FD2_up_bid_price[i] <= FD2_up_price[i] ? 1 : 0 for i in 1:24]
-    #acceptance_FD2_down = [FD2_down_bid_price[i] <= FD2_down_price[i] ? 1 : 0 for i in 1:24]
-
     DA_up_bid = Bid_Results["b_DA_up"]
     DA_down_bid = Bid_Results["b_DA_dn"]
     FD1_up_bid = Bid_Results["b_FD1_up"].*acceptance_FD1_up

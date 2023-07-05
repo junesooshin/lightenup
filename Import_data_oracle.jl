@@ -31,30 +31,6 @@ function data_import_Oracle(data_import, Data_index, test_day)
     FD2_down_percentage = ones((24))
     FD1_up_percentage   = ones((24))
     FD2_up_percentage   = ones((24))
-    # ALWAYS ACCEPTED, IF THERE EXIST PROCUMENT IN THE MARKET
-    for i in 1:24
-        if df_test[i, "FD1_down_percentage"] <= 0 
-            FD1_down_percentage[i] = 0     
-        end
-        
-        if df_test[i, "FD2_down_percentage"] <= 0
-            FD2_down_percentage[i] = 0      
-        end
-
-        if df_test[i, "FD1_up_percentage"] <= 0 
-            FD1_up_percentage[i] = 0      
-        end
-
-        if df_test[i, "FD2_up_percentage"] <= 0 
-            FD2_up_percentage[i] = 0      
-        end
-    end
-
-
-    #FD1_down_percentage = repeat([1], 24) # Always accepted
-    #FD2_down_percentage = repeat([1], 24)
-    #FD1_up_percentage   = repeat([1], 24)
-    #FD2_up_percentage   = repeat([1], 24)
 
     #Export for a selected forecast/test day
     Data = Dict("Time" => [i for i in 1:24], 

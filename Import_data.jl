@@ -184,30 +184,14 @@ end
 function load_data(file) 
 
     dir = dirname(@__FILE__)
-    filepath = string(dir , "/Processed_data/real.csv")
 
     # Load files
-    if file == "processed"
-        filepath = string(dir , "/Processed_data/" , "real.csv")
-        data_import = DataFrame(CSV.File(filepath)) 
-        return data_import
-
-    elseif file == "features"
-        filepath = string(dir , "/Processed_data/features.csv")
-        data_import = DataFrame(CSV.File(filepath)) 
-        return data_import
-
-    elseif file == "forgettingFactor"
-        filepath = string(dir , "/Processed_data/", "forgettingFactor.csv")
-        data_import = DataFrame(CSV.File(filepath))
-        return data_import
-
-    else # If none of the above it is the forecast file
-        filepath = string(dir , "/Processed_data/forecast_all", file , ".csv")
-        data_import = DataFrame(CSV.File(filepath))
-        return data_import
     
-    end 
+    filepath = string(dir , "/Processed_data/" , file,".csv")
+    data_import = DataFrame(CSV.File(filepath)) 
+
+    return data_import
+     
 end
 
 function construct_acceptance(FCRD_bid, vol_avg_price)

@@ -24,6 +24,8 @@ function Feature_Model(Data, Architecture)
     X_train_f = Data["X_train_f"] # All the forecast features to use in the training 
     X_f = Data["X_f"] # Forecasted feature for the bidding day D
 
+    
+
     ## Concatenate X and X_f if forecast is used.
     #if Model_configuration == "With forecast"
     #    # Concatenate such that it go from: X:(24, 5, 5), X_f(24, 5) -> X(24,6,5)
@@ -73,141 +75,143 @@ function Feature_Model(Data, Architecture)
     ####################################################
 
     Model_feature = Model(Gurobi.Optimizer) # Initialize solver
-
-    ####################################################
-    ############          Sets           ###############
-    ####################################################
-
-
-    H2 = H[2:end]
-    H_ini = H[1]
-    D_ini = D[1]
-
-    ####################################################
-    ############        Variable         ###############
-    ####################################################
-
-    
-    # VALUES TO OPTIMIZE
-    @variable(Model_feature, q_FD2_up[HF,1:(F+1)])                # Coefficient for FCR-D D-2 up. Offset + all features
-    @variable(Model_feature, q_FD2_dn[HF,1:(F+1)])                # Coefficient for FCR-D D-2 dn. Offset + all features
-    @variable(Model_feature, q_DA_up[HF,1:(F+1)])                 # Coefficient for DA up. Offset + all features
-    @variable(Model_feature, q_DA_dn[HF,1:(F+1)])                 # Coefficient for DA dn. Offset + all features
-    @variable(Model_feature, q_FD1_up[HF,1:(F+1)])                # Coefficient for FCR-D D-1 up. Offset + all features
-    @variable(Model_feature, q_FD1_dn[HF,1:(F+1)])                # Coefficient for FCR-D D-1 dn. Offset + all features
+    @time begin
+        result_time = @elapsed begin
+            ####################################################
+            ############          Sets           ###############
+            ####################################################
 
 
-    @variable(Model_feature , SOC[H,D] >= 0)                   # State of charge variable 
+            H2 = H[2:end]
+            H_ini = H[1]
+            D_ini = D[1]
 
-    # Helper variables
-    @variable(Model_feature , p_FD2_up[H,D] >= 0)              # Accepted Bid FCR-D D-2 Upregulation/Discharging (SLACK)
-    @variable(Model_feature , p_FD2_dn[H,D] >= 0)              # Accepted Bid FCR-D D-2 Downregulation/Charging (SLACK)
-    @variable(Model_feature , p_DA_up[H,D] >= 0)               # Accepted Bid Upregulation/Discharging in Day-ahead (SLACK)
-    @variable(Model_feature , p_DA_dn[H,D] >= 0)               # Accepted Bid Downregulation/Charging in Day-ahead (SLACK)
-    @variable(Model_feature , p_FD1_up[H,D] >= 0)              # Accepted Bid FCR-D D-1 Upregulation/Discharging (SLACK)
-    @variable(Model_feature , p_FD1_dn[H,D] >= 0)              # Accepted Bid FCR-D D-1 Downregulation/Charging (SLACK)
-    @variable(Model_feature , p_all_dn[H,D] >= 0)              # Aggregation of all charge in time t
-    @variable(Model_feature , p_all_up[H,D] >= 0)              # Aggregation of all discharge in time t
+            ####################################################
+            ############        Variable         ###############
+            ####################################################
 
-    @variable(Model_feature , b_FD2_up[H,D] >= 0)              # Provided Bid FCR-D D-2 Upregulation/Discharging
-    @variable(Model_feature , b_FD2_dn[H,D] >= 0)              # Provided Bid FCR-D D-2 Downregulation/Charging
-    @variable(Model_feature , b_DA_up[H,D] >= 0)               # Provided Bid Upregulation/Discharging in Day-ahead 
-    @variable(Model_feature , b_DA_dn[H,D] >= 0)               # Provided Bid Downregulation/Charging in Day-ahead 
-    @variable(Model_feature , b_FD1_up[H,D] >= 0)              # Provided Bid FCR-D D-2 Upregulation/Discharging
-    @variable(Model_feature , b_FD1_dn[H,D] >= 0)              # Provided Bid FCR-D D-2 Downregulation/Charging
-    
-    @variable(Model_feature , G_FD1[H,D])                       # Gain/Profit from FCR-D
-    @variable(Model_feature , G_FD2[H,D])                       # Gain/Profit from FCR-D
-    @variable(Model_feature , G_DA[H,D])                       # Gain/Profit from Day-ahead
-    @variable(Model_feature , C_Deg[H,D])                      # Cost from degradation
+            
+            # VALUES TO OPTIMIZE
+            @variable(Model_feature, q_FD2_up[HF,1:(F+1)])                # Coefficient for FCR-D D-2 up. Offset + all features
+            @variable(Model_feature, q_FD2_dn[HF,1:(F+1)])                # Coefficient for FCR-D D-2 dn. Offset + all features
+            @variable(Model_feature, q_DA_up[HF,1:(F+1)])                 # Coefficient for DA up. Offset + all features
+            @variable(Model_feature, q_DA_dn[HF,1:(F+1)])                 # Coefficient for DA dn. Offset + all features
+            @variable(Model_feature, q_FD1_up[HF,1:(F+1)])                # Coefficient for FCR-D D-1 up. Offset + all features
+            @variable(Model_feature, q_FD1_dn[HF,1:(F+1)])                # Coefficient for FCR-D D-1 dn. Offset + all features
 
 
-    ###################################################
-    #                     NOTE                        #
+            @variable(Model_feature , SOC[H,D] >= 0)                   # State of charge variable 
 
-    # All variables and parameters will be indexed: [h,d]
+            # Helper variables
+            @variable(Model_feature , p_FD2_up[H,D] >= 0)              # Accepted Bid FCR-D D-2 Upregulation/Discharging (SLACK)
+            @variable(Model_feature , p_FD2_dn[H,D] >= 0)              # Accepted Bid FCR-D D-2 Downregulation/Charging (SLACK)
+            @variable(Model_feature , p_DA_up[H,D] >= 0)               # Accepted Bid Upregulation/Discharging in Day-ahead (SLACK)
+            @variable(Model_feature , p_DA_dn[H,D] >= 0)               # Accepted Bid Downregulation/Charging in Day-ahead (SLACK)
+            @variable(Model_feature , p_FD1_up[H,D] >= 0)              # Accepted Bid FCR-D D-1 Upregulation/Discharging (SLACK)
+            @variable(Model_feature , p_FD1_dn[H,D] >= 0)              # Accepted Bid FCR-D D-1 Downregulation/Charging (SLACK)
+            @variable(Model_feature , p_all_dn[H,D] >= 0)              # Aggregation of all charge in time t
+            @variable(Model_feature , p_all_up[H,D] >= 0)              # Aggregation of all discharge in time t
 
-    #                                                 #
-    ###################################################
-
-    ####################################################
-    ############        Objective        ###############
-    ####################################################
-
-    @objective(Model_feature, Max, sum((G_FD1[h,d] + G_FD2[h,d] + G_DA[h,d] - C_Deg[h,d]) for h in H, d in D))
-
-    @constraint(Model_feature, FD1_slack_obj[h in H, d in D], G_FD1[h,d] == lambda_FD1_up[ h,d ]*p_FD1_up[h,d] + lambda_FD1_dn[ h,d ]*p_FD1_dn[h,d]) # Constraint to set G_FD
-    @constraint(Model_feature, FD2_slack_obj[h in H, d in D], G_FD2[h,d] == lambda_FD2_up[ h,d ]*p_FD2_up[h,d] + lambda_FD2_dn[ h,d ]*p_FD2_dn[h,d]) # Constraint to set G_FD
-
-    @constraint(Model_feature, DA_slack_obj[h in H, d in D], G_DA[h,d] == lambda_DA[ h,d ]*(p_DA_up[h,d]-p_DA_dn[h,d])) # Constraint to set G_DA
-
-    @constraint(Model_feature, Deg_slack_obj[h in H, d in D], C_Deg[h,d] == (p_all_dn[h,d] + p_all_up[h,d])/(2*SOC_max) * Cost_per_cycle ) # Constraint to set G_Bal
-
-    ####################################################
-    ############   Battery Constraints   ###############
-    ####################################################
-
-    # All charging:
-    @constraint(Model_feature, p_all_dn_con[h in H, d in D], p_all_dn[h,d] == p_DA_dn[h,d] + a_dn_t[ h,d ]*(p_FD2_dn[h,d] + p_FD1_dn[h,d])) # Constraint to keep track of the summation of all the charge
-    @constraint(Model_feature, p_all_up_con[h in H, d in D], p_all_up[h,d] == p_DA_up[h,d]+ a_up_t[ h,d ]*(p_FD2_up[h,d] + p_FD1_up[h,d])) # Constraint to keep track of the summation of all the charge
+            @variable(Model_feature , b_FD2_up[H,D] >= 0)              # Provided Bid FCR-D D-2 Upregulation/Discharging
+            @variable(Model_feature , b_FD2_dn[H,D] >= 0)              # Provided Bid FCR-D D-2 Downregulation/Charging
+            @variable(Model_feature , b_DA_up[H,D] >= 0)               # Provided Bid Upregulation/Discharging in Day-ahead 
+            @variable(Model_feature , b_DA_dn[H,D] >= 0)               # Provided Bid Downregulation/Charging in Day-ahead 
+            @variable(Model_feature , b_FD1_up[H,D] >= 0)              # Provided Bid FCR-D D-2 Upregulation/Discharging
+            @variable(Model_feature , b_FD1_dn[H,D] >= 0)              # Provided Bid FCR-D D-2 Downregulation/Charging
+            
+            @variable(Model_feature , G_FD1[H,D])                       # Gain/Profit from FCR-D
+            @variable(Model_feature , G_FD2[H,D])                       # Gain/Profit from FCR-D
+            @variable(Model_feature , G_DA[H,D])                       # Gain/Profit from Day-ahead
+            @variable(Model_feature , C_Deg[H,D])                      # Cost from degradation
 
 
-    # STATE OF CHARGE CONSTRAINT
+            ###################################################
+            #                     NOTE                        #
 
-    @constraint(Model_feature, SOC_con[h in H2, d in D], SOC[h,d] == SOC[h-1,d] + eta_ch*p_all_dn[h,d] - eta_dis*p_all_up[h,d])
+            # All variables and parameters will be indexed: [h,d]
 
-    @constraint(Model_feature, SOC_D2[d in D], SOC[H_ini,d] == SOC_0 + eta_ch*p_all_dn[H_ini,d]- eta_dis*p_all_up[H_ini,d])
+            #                                                 #
+            ###################################################
 
-    @constraint(Model_feature, SOC_cap_con[h in H, d in D], SOC[h,d] >= (b_FD2_up[h,d] + p_DA_up[h,d] + b_FD1_up[h,d]) ) # To ensure that enough energy in battery for upregulation/discharging. The SOC need to be bigger or equal to all the bids combined for that hour
-    @constraint(Model_feature, SOC_cap_con2[h in H, d in D], SOC[h,d] <= SOC_max - (b_FD2_dn[h,d] + p_DA_dn[h,d] + b_FD1_dn[h,d]) ) # To ensure that enough energy can be downregulated/charged to the battery. The SOC need to be smaller or equal to the max SOC minus all the downregulated bids combined for that hour
+            ####################################################
+            ############        Objective        ###############
+            ####################################################
 
-    # CHARGING AND DISCHARGING CONSTRAINT
-    @constraint(Model_feature, Charging_con[h in H, d in D], b_FD2_dn[h,d] + p_DA_dn[h,d] + b_FD2_dn[h,d] <= p_ch_max ) # Constraint State of charge
-    @constraint(Model_feature, Discharging_con[h in H, d in D], b_FD2_up[h,d] + p_DA_up[h,d] + b_FD2_up[h,d] <= p_dis_max ) # Constraint State of charge
+            @objective(Model_feature, Max, sum((G_FD1[h,d] + G_FD2[h,d] + G_DA[h,d] - C_Deg[h,d]) for h in H, d in D))
 
-    ####################################################
-    ############  ACCEPTANCE CONSTRAINTS  ##############
-    ####################################################
+            @constraint(Model_feature, FD1_slack_obj[h in H, d in D], G_FD1[h,d] == lambda_FD1_up[ h,d ]*p_FD1_up[h,d] + lambda_FD1_dn[ h,d ]*p_FD1_dn[h,d]) # Constraint to set G_FD
+            @constraint(Model_feature, FD2_slack_obj[h in H, d in D], G_FD2[h,d] == lambda_FD2_up[ h,d ]*p_FD2_up[h,d] + lambda_FD2_dn[ h,d ]*p_FD2_dn[h,d]) # Constraint to set G_FD
 
-    @constraint(Model_feature, FD2_up_acc_con[h in H, d in D], p_FD2_up[h,d] == y_FD2_up[ h,d ]*b_FD2_up[h,d] ) # The true power after corrected for acceptance of the bid
-    @constraint(Model_feature, FD2_dn_acc_con[h in H, d in D], p_FD2_dn[h,d] == y_FD2_dn[ h,d ]*b_FD2_dn[h,d] ) # The true power after corrected for acceptance of the bid
-    @constraint(Model_feature, DA_up_acc_con[h in H, d in D], p_DA_up[h,d] == 1*b_DA_up[h,d] ) # assuming 100 % acceptance in DA
-    @constraint(Model_feature, DA_dn_acc_con[h in H, d in D], p_DA_dn[h,d] == 1*b_DA_dn[h,d] ) # assuming 100 % acceptance in DA
-    @constraint(Model_feature, FD1_up_acc_con[h in H, d in D], p_FD1_up[h,d] == y_FD1_up[ h,d ]*b_FD1_up[h,d] ) # The true power after corrected for acceptance of the bid
-    @constraint(Model_feature, FD1_dn_acc_con[h in H, d in D], p_FD1_dn[h,d] == y_FD1_dn[ h,d ]*b_FD1_dn[h,d] ) # The true power after corrected for acceptance of the bid
-    
-    # Here you are setting the constraint for the bids for each days within the whole training period
-    # As we have features for a long time period, we divide the features in days (24 hours) and great day/i constraints
-    
+            @constraint(Model_feature, DA_slack_obj[h in H, d in D], G_DA[h,d] == lambda_DA[ h,d ]*(p_DA_up[h,d]-p_DA_dn[h,d])) # Constraint to set G_DA
 
-    if Architecture == "GA"
-        @constraint(Model_feature, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[1,f] * X[ h,d, f] for f in 1:F) + q_FD2_up[1,F+1])
-        @constraint(Model_feature, FD2_Coef_con_dn[h in H, d in D], b_FD2_dn[h,d] == sum(q_FD2_dn[1,f] * X[ h,d, f] for f in 1:F) + q_FD2_dn[1,F+1])
-        @constraint(Model_feature, DA_Coef_con_up[h in H,  d in D], b_DA_up[h,d] == sum(q_DA_up[1,f] * X[ h,d, f] for f in 1:F) + q_DA_up[1,F+1])
-        @constraint(Model_feature, DA_Coef_con_dn[h in H,  d in D], b_DA_dn[h,d] == sum(q_DA_dn[1,f] * X[ h,d, f] for f in 1:F) + q_DA_dn[1,F+1])
-        @constraint(Model_feature, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[1,F+1])
-        @constraint(Model_feature, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[1,F+1])
+            @constraint(Model_feature, Deg_slack_obj[h in H, d in D], C_Deg[h,d] == (p_all_dn[h,d] + p_all_up[h,d])/(2*SOC_max) * Cost_per_cycle ) # Constraint to set G_Bal
 
-    elseif Architecture == "HA"
-        @constraint(Model_feature, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_up[h,F+1])
-        @constraint(Model_feature, FD2_Coef_con_dn[h in H, d in D], b_FD2_dn[h,d] == sum(q_FD2_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_dn[h,F+1])
-        @constraint(Model_feature, DA_Coef_con_up[h in H,  d in D], b_DA_up[h,d] == sum(q_DA_up[h,f] * X[ h,d, f] for f in 1:F) + q_DA_up[h,F+1])
-        @constraint(Model_feature, DA_Coef_con_dn[h in H,  d in D], b_DA_dn[h,d] == sum(q_DA_dn[h,f] * X[ h,d, f] for f in 1:F) + q_DA_dn[h,F+1])
-        @constraint(Model_feature, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[h,F+1])
-        @constraint(Model_feature, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[h,F+1])
-    end
+            ####################################################
+            ############   Battery Constraints   ###############
+            ####################################################
+
+            # All charging:
+            @constraint(Model_feature, p_all_dn_con[h in H, d in D], p_all_dn[h,d] == p_DA_dn[h,d] + a_dn_t[ h,d ]*(p_FD2_dn[h,d] + p_FD1_dn[h,d])) # Constraint to keep track of the summation of all the charge
+            @constraint(Model_feature, p_all_up_con[h in H, d in D], p_all_up[h,d] == p_DA_up[h,d]+ a_up_t[ h,d ]*(p_FD2_up[h,d] + p_FD1_up[h,d])) # Constraint to keep track of the summation of all the charge
 
 
-    ####################################################
-    ############         Solving         ###############
-    ####################################################
-    optimize!(Model_feature)
+            # STATE OF CHARGE CONSTRAINT
 
+            @constraint(Model_feature, SOC_con[h in H2, d in D], SOC[h,d] == SOC[h-1,d] + eta_ch*p_all_dn[h,d] - eta_dis*p_all_up[h,d])
+
+            @constraint(Model_feature, SOC_D2[d in D], SOC[H_ini,d] == SOC_0 + eta_ch*p_all_dn[H_ini,d]- eta_dis*p_all_up[H_ini,d])
+
+            @constraint(Model_feature, SOC_cap_con[h in H, d in D], SOC[h,d] >= (b_FD2_up[h,d] + p_DA_up[h,d] + b_FD1_up[h,d]) ) # To ensure that enough energy in battery for upregulation/discharging. The SOC need to be bigger or equal to all the bids combined for that hour
+            @constraint(Model_feature, SOC_cap_con2[h in H, d in D], SOC[h,d] <= SOC_max - (b_FD2_dn[h,d] + p_DA_dn[h,d] + b_FD1_dn[h,d]) ) # To ensure that enough energy can be downregulated/charged to the battery. The SOC need to be smaller or equal to the max SOC minus all the downregulated bids combined for that hour
+
+            # CHARGING AND DISCHARGING CONSTRAINT
+            @constraint(Model_feature, Charging_con[h in H, d in D], b_FD2_dn[h,d] + p_DA_dn[h,d] + b_FD2_dn[h,d] <= p_ch_max ) # Constraint State of charge
+            @constraint(Model_feature, Discharging_con[h in H, d in D], b_FD2_up[h,d] + p_DA_up[h,d] + b_FD2_up[h,d] <= p_dis_max ) # Constraint State of charge
+
+            ####################################################
+            ############  ACCEPTANCE CONSTRAINTS  ##############
+            ####################################################
+
+            @constraint(Model_feature, FD2_up_acc_con[h in H, d in D], p_FD2_up[h,d] == y_FD2_up[ h,d ]*b_FD2_up[h,d] ) # The true power after corrected for acceptance of the bid
+            @constraint(Model_feature, FD2_dn_acc_con[h in H, d in D], p_FD2_dn[h,d] == y_FD2_dn[ h,d ]*b_FD2_dn[h,d] ) # The true power after corrected for acceptance of the bid
+            @constraint(Model_feature, DA_up_acc_con[h in H, d in D], p_DA_up[h,d] == 1*b_DA_up[h,d] ) # assuming 100 % acceptance in DA
+            @constraint(Model_feature, DA_dn_acc_con[h in H, d in D], p_DA_dn[h,d] == 1*b_DA_dn[h,d] ) # assuming 100 % acceptance in DA
+            @constraint(Model_feature, FD1_up_acc_con[h in H, d in D], p_FD1_up[h,d] == y_FD1_up[ h,d ]*b_FD1_up[h,d] ) # The true power after corrected for acceptance of the bid
+            @constraint(Model_feature, FD1_dn_acc_con[h in H, d in D], p_FD1_dn[h,d] == y_FD1_dn[ h,d ]*b_FD1_dn[h,d] ) # The true power after corrected for acceptance of the bid
+            
+            # Here you are setting the constraint for the bids for each days within the whole training period
+            # As we have features for a long time period, we divide the features in days (24 hours) and great day/i constraints
+            
+
+            if Architecture == "GA"
+                @constraint(Model_feature, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[1,f] * X[ h,d, f] for f in 1:F) + q_FD2_up[1,F+1])
+                @constraint(Model_feature, FD2_Coef_con_dn[h in H, d in D], b_FD2_dn[h,d] == sum(q_FD2_dn[1,f] * X[ h,d, f] for f in 1:F) + q_FD2_dn[1,F+1])
+                @constraint(Model_feature, DA_Coef_con_up[h in H,  d in D], b_DA_up[h,d] == sum(q_DA_up[1,f] * X[ h,d, f] for f in 1:F) + q_DA_up[1,F+1])
+                @constraint(Model_feature, DA_Coef_con_dn[h in H,  d in D], b_DA_dn[h,d] == sum(q_DA_dn[1,f] * X[ h,d, f] for f in 1:F) + q_DA_dn[1,F+1])
+                @constraint(Model_feature, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[1,F+1])
+                @constraint(Model_feature, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[1,F+1])
+
+            elseif Architecture == "HA"
+                @constraint(Model_feature, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_up[h,F+1])
+                @constraint(Model_feature, FD2_Coef_con_dn[h in H, d in D], b_FD2_dn[h,d] == sum(q_FD2_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_dn[h,F+1])
+                @constraint(Model_feature, DA_Coef_con_up[h in H,  d in D], b_DA_up[h,d] == sum(q_DA_up[h,f] * X[ h,d, f] for f in 1:F) + q_DA_up[h,F+1])
+                @constraint(Model_feature, DA_Coef_con_dn[h in H,  d in D], b_DA_dn[h,d] == sum(q_DA_dn[h,f] * X[ h,d, f] for f in 1:F) + q_DA_dn[h,F+1])
+                @constraint(Model_feature, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[h,F+1])
+                @constraint(Model_feature, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[h,F+1])
+            end
+
+
+            ####################################################
+            ############         Solving         ###############
+            ####################################################
+            optimize!(Model_feature)
+        end # end of elapsed time
+    end # end of time
 
     ####################################################
     ############         Results         ###############
     ####################################################
-    feature_solution = Dict("b_FD2_up" => [value.(b_FD2_up[h,d]) for h in H, d in D],
+    feature_solution = Dict("time" => result_time,"b_FD2_up" => [value.(b_FD2_up[h,d]) for h in H, d in D],
                         "b_FD2_dn" => [value.(b_FD2_dn[h,d]) for h in H, d in D],
                         "b_DA_up" => [value.(b_DA_up[h,d]) for h in H, d in D],
                         "b_DA_dn" => [value.(b_DA_dn[h,d]) for h in H, d in D],
@@ -266,6 +270,9 @@ function Create_bid_Feature(Data, Results_from_training,Architecture)
     b_FD1_up_train = Results_from_training["b_FD1_up"]
     b_FD1_dn_train = Results_from_training["b_FD1_dn"]
 
+
+    time = Results_from_training["time"]
+
     ################ The Forecasted prices i.e. the bid prices ################
 
     f_DA = Data["f_DA_t"]
@@ -319,7 +326,8 @@ function Create_bid_Feature(Data, Results_from_training,Architecture)
     soc = transpose(mean(Results_from_training["SOC"], dims=2))
     X = Results_from_training["X"]
 
-    Bid_Results = Dict("obj_t" => obj_t,
+    Bid_Results = Dict("time"=> time,
+                        "obj_t" => obj_t,
                        "b_FD2_up" => b_FD2_up, "b_FD2_dn" => b_FD2_dn,
                        "b_DA_up"  => b_DA_up , "b_DA_dn"  => b_DA_dn,
                        "b_FD1_up" => b_FD1_up, "b_FD1_dn" => b_FD1_dn,

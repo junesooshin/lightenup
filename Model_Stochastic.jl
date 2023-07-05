@@ -1,15 +1,18 @@
 
 function stochastic_model(Data)
+
     #Parameters independent of stages
     T = Data["T"]
     T2 = T[2:end]
     t_ini = T[1]
-    W1 = [i for i in 1:Data["size_W1"]]
-    W2 = [i for i in 1:Data["size_W2"]]
-    W3 = [i for i in 1:Data["size_W3"]]
-    pi1 = repeat([1/length(W1)], length(W1))
-    pi2 = repeat([1/length(W2)], length(W2))
-    pi3 = repeat([1/length(W3)], length(W3))
+    W1 = [i for i in 1:Data["size_W1"]] # FD2
+    W2 = [i for i in 1:Data["size_W2"]] # DA
+    W3 = [i for i in 1:Data["size_W3"]] # FD1
+    pi1 = Data["pi1"]
+    pi2 = Data["pi2"]
+    pi3 = Data["pi3"]
+    
+
     SOC_0 = Data["SOC_0"] 
     SOC_max = Data["SOC_max"] 
     eta_dis = Data["eta_dis"] 
@@ -36,72 +39,77 @@ function stochastic_model(Data)
     f_a_dn_tw   = Data["f_a_dn_tw"] 
 
     m_sto = Model(Gurobi.Optimizer)
+    @time begin
+        result_time = @elapsed begin
+            #1st stage decision variable [t]
+            @variable(m_sto, b_FD2_up[T] >= 0)  
+            @variable(m_sto, b_FD2_dn[T] >= 0)   
 
-    #1st stage decision variable [t]
-    @variable(m_sto, b_FD2_up[T] >= 0)  
-    @variable(m_sto, b_FD2_dn[T] >= 0)   
+            #2nd stage decision variable [t,w1]
+            @variable(m_sto, p_FD2_up[T,W1] >= 0)            
+            @variable(m_sto, p_FD2_dn[T,W1] >= 0)   
+            @variable(m_sto, p_DA_up[T,W1] >= 0)        
+            @variable(m_sto, p_DA_dn[T,W1] >= 0)  
 
-    #2nd stage decision variable [t,w1]
-    @variable(m_sto, p_FD2_up[T,W1] >= 0)            
-    @variable(m_sto, p_FD2_dn[T,W1] >= 0)   
-    @variable(m_sto, p_DA_up[T,W1] >= 0)        
-    @variable(m_sto, p_DA_dn[T,W1] >= 0)  
+            #3rd stage decision variable [t,w1,w2]  
+            @variable(m_sto, b_FD1_up[T,W1,W2] >= 0)              
+            @variable(m_sto, b_FD1_dn[T,W1,W2] >= 0)   
 
-    #3rd stage decision variable [t,w1,w2]  
-    @variable(m_sto, b_FD1_up[T,W1,W2] >= 0)              
-    @variable(m_sto, b_FD1_dn[T,W1,W2] >= 0)   
+            #4th stage decision variable [t,w1,w2,w3]
+            @variable(m_sto, p_FD1_up[T,W1,W2,W3] >= 0)           
+            @variable(m_sto, p_FD1_dn[T,W1,W2,W3] >= 0)                
+            @variable(m_sto, p_all_dn[T,W1,W2,W3] >= 0)             
+            @variable(m_sto, p_all_up[T,W1,W2,W3] >= 0)           
+            @variable(m_sto, SOC[T,W1,W2,W3] >= 0)                 
 
-    #4th stage decision variable [t,w1,w2,w3]
-    @variable(m_sto, p_FD1_up[T,W1,W2,W3] >= 0)           
-    @variable(m_sto, p_FD1_dn[T,W1,W2,W3] >= 0)                
-    @variable(m_sto, p_all_dn[T,W1,W2,W3] >= 0)             
-    @variable(m_sto, p_all_up[T,W1,W2,W3] >= 0)           
-    @variable(m_sto, SOC[T,W1,W2,W3] >= 0)                 
+            #Stage independent variable (profits and costs at each stage)
+            @variable(m_sto, G_FD2[t in T] >= 0)
+            @variable(m_sto, G_DA[t in T]  >= 0)                      
+            @variable(m_sto, G_FD1[t in T] >= 0)             
+            @variable(m_sto, C_Deg[t in T] >= 0)                      
 
-    #Stage independent variable (profits and costs at each stage)
-    @variable(m_sto, G_FD2[t in T] >= 0)
-    @variable(m_sto, G_DA[t in T] >= 0)                      
-    @variable(m_sto, G_FD1[t in T] >= 0)             
-    @variable(m_sto, C_Deg[t in T] >= 0)                        
+            @objective(m_sto, Max, sum(G_FD2[t] + G_DA[t] + G_FD1[t] - C_Deg[t] for t in T) )
 
-    @objective(m_sto, Max, sum(G_FD2[t] + G_DA[t] + G_FD1[t] - C_Deg[t] for t in T) )
+            @constraint(m_sto, Gain_FD2[t in T], G_FD2[t] == sum(pi1[w1]*(f_FD2_up_tw[t,w1]*p_FD2_up[t,w1]
+                                                    + f_FD2_dn_tw[t,w1]*p_FD2_dn[t,w1]) 
+                                                    for w1 in W1))
 
-    @constraint(m_sto, Gain_FD2[t in T], G_FD2[t] == sum(pi1[w1]*(f_FD2_up_tw[t,w1]*p_FD2_up[t,w1]
-                                            + f_FD2_dn_tw[t,w1]*p_FD2_dn[t,w1]) 
-                                            for w1 in W1))
-    @constraint(m_sto, Gain_DA[t in T], G_DA[t] == sum(pi1[w1]*pi2[w2]*(f_DA_tw[t,w1,w2]
-                                                    *(p_DA_up[t,w1]-p_DA_dn[t,w1])) 
-                                                    for w1 in W1, w2 in W2)) 
-    @constraint(m_sto, Gain_FD1[t in T], G_FD1[t] == sum(pi1[w1]*pi2[w2]*pi3[w3]*(f_FD1_up_tw[t,w1,w2,w3]*p_FD1_up[t,w1,w2,w3]  
-                                                            + f_FD1_dn_tw[t,w1,w2,w3]*p_FD1_dn[t,w1,w2,w3]) 
-                                                            for w1 in W1, w2 in W2, w3 in W3)) 
-    @constraint(m_sto, Deg[t in T], C_Deg[t] == sum(pi1[w1]*pi2[w2]*pi3[w3]*(p_all_dn[t,w1,w2,w3] + p_all_up[t,w1,w2,w3]) for w1 in W1, w2 in W2, w3 in W3)/(2*SOC_max) * Cost_per_cycle) # Constraint to set G_Bal
+            @constraint(m_sto, Gain_DA[t in T], G_DA[t] == sum(pi2[w1,w2]*(f_DA_tw[t,w1,w2]
+                                                            *(p_DA_up[t,w1]-p_DA_dn[t,w1])) 
+                                                            for w1 in W1, w2 in W2)) 
 
+            @constraint(m_sto, Gain_FD1[t in T], G_FD1[t] == sum(pi3[w1,w2,w3]*(f_FD1_up_tw[t,w1,w2,w3]*p_FD1_up[t,w1,w2,w3]  
+                                                                    + f_FD1_dn_tw[t,w1,w2,w3]*p_FD1_dn[t,w1,w2,w3]) 
+                                                                    for w1 in W1, w2 in W2, w3 in W3)) 
+
+            @constraint(m_sto, Deg[t in T], C_Deg[t] == sum(pi3[w1,w2,w3]*(p_all_dn[t,w1,w2,w3] + p_all_up[t,w1,w2,w3]) for w1 in W1, w2 in W2, w3 in W3)/(2*SOC_max) * Cost_per_cycle) # Constraint to set G_Bal
 
 
-    @constraint(m_sto, p_all_dn_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_all_dn[t,w1,w2,w3] == p_DA_dn[t,w1] + f_a_dn_tw[t,w1,w2,w3]*(p_FD1_dn[t,w1,w2,w3] + p_FD2_dn[t,w1])) # Constraint to keep track of the summation of all the charge
-    @constraint(m_sto, p_all_up_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_all_up[t,w1,w2,w3] == p_DA_up[t,w1] + f_a_up_tw[t,w1,w2,w3]*(p_FD1_up[t,w1,w2,w3] + p_FD2_up[t,w1])) # Constraint to keep track of the summation of all the charge
 
-    @constraint(m_sto, SOC_con[t in T2, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] == SOC[t-1,w1,w2,w3] + eta_ch*p_all_dn[t,w1,w2,w3] - eta_dis*p_all_up[t,w1,w2,w3] ) # Constraint State of charge
+            @constraint(m_sto, p_all_dn_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_all_dn[t,w1,w2,w3] == p_DA_dn[t,w1] + f_a_dn_tw[t,w1,w2,w3]*(p_FD1_dn[t,w1,w2,w3] + p_FD2_dn[t,w1])) # Constraint to keep track of the summation of all the charge
+            @constraint(m_sto, p_all_up_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_all_up[t,w1,w2,w3] == p_DA_up[t,w1] + f_a_up_tw[t,w1,w2,w3]*(p_FD1_up[t,w1,w2,w3] + p_FD2_up[t,w1])) # Constraint to keep track of the summation of all the charge
 
-    @constraint(m_sto, SOC_con_ini[w1 in W1, w2 in W2, w3 in W3], SOC[t_ini,w1,w2,w3] == SOC_0 + eta_ch*p_all_dn[t_ini,w1,w2,w3] - eta_dis*p_all_up[t_ini,w1,w2,w3] ) # Constraint State of charge
+            @constraint(m_sto, SOC_con[t in T2, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] == SOC[t-1,w1,w2,w3] + eta_ch*p_all_dn[t,w1,w2,w3] - eta_dis*p_all_up[t,w1,w2,w3] ) # Constraint State of charge
 
-    @constraint(m_sto, SOC_cap_con[t in T, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] >= (p_DA_up[t,w1] + b_FD1_up[t,w1,w2] + b_FD2_up[t]) ) # To ensure that enough energy in battery for upregulation/discharging. The SOC need to be bigger or equal to all the bids combined for that hour
-    @constraint(m_sto, SOC_cap_con2[t in T, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] <= SOC_max - (p_DA_dn[t,w1] + b_FD1_dn[t,w1,w2] + b_FD2_dn[t]) ) # To ensure that enough energy can be downregulated/charged to the battery. The SOC need to be smaller or equal to the max SOC minus all the downregulated bids combined for that hour
+            @constraint(m_sto, SOC_con_ini[w1 in W1, w2 in W2, w3 in W3], SOC[t_ini,w1,w2,w3] == SOC_0 + eta_ch*p_all_dn[t_ini,w1,w2,w3] - eta_dis*p_all_up[t_ini,w1,w2,w3] ) # Constraint State of charge
 
-    @constraint(m_sto, Charging_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_DA_dn[t,w1] + b_FD1_dn[t,w1,w2] + b_FD2_dn[t] <= p_ch_max ) # Constraint State of charge
-    @constraint(m_sto, Discharging_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_DA_up[t,w1] + b_FD1_up[t,w1,w2] + b_FD2_up[t] <= p_dis_max ) # Constraint State of charge
+            @constraint(m_sto, SOC_cap_con[t in T, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] >= (p_DA_up[t,w1] + b_FD1_up[t,w1,w2] + b_FD2_up[t]) ) # To ensure that enough energy in battery for upregulation/discharging. The SOC need to be bigger or equal to all the bids combined for that hour
+            @constraint(m_sto, SOC_cap_con2[t in T, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] <= SOC_max - (p_DA_dn[t,w1] + b_FD1_dn[t,w1,w2] + b_FD2_dn[t]) ) # To ensure that enough energy can be downregulated/charged to the battery. The SOC need to be smaller or equal to the max SOC minus all the downregulated bids combined for that hour
 
-    @constraint(m_sto, FD1_up_acc_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_FD1_up[t,w1,w2,w3] == f_FD1_y_up_tw[t,w1,w2,w3]*b_FD1_up[t,w1,w2] ) # The true power after corrected for acceptance of the bid
-    @constraint(m_sto, FD2_up_acc_con[t in T, w1 in W1], p_FD2_up[t,w1] == f_FD2_y_up_tw[t,w1]*b_FD2_up[t] ) # The true power after corrected for acceptance of the bid
-    @constraint(m_sto, FD1_dn_acc_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_FD1_dn[t,w1,w2,w3] == f_FD1_y_dn_tw[t,w1,w2,w3]*b_FD1_dn[t,w1,w2] ) # The true power after corrected for acceptance of the bid
-    @constraint(m_sto, FD2_dn_acc_con[t in T, w1 in W1], p_FD2_dn[t,w1] == f_FD2_y_dn_tw[t,w1]*b_FD2_dn[t] ) # The true power after corrected for acceptance of the bid
+            @constraint(m_sto, Charging_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_DA_dn[t,w1] + b_FD1_dn[t,w1,w2] + b_FD2_dn[t] <= p_ch_max ) # Constraint State of charge
+            @constraint(m_sto, Discharging_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_DA_up[t,w1] + b_FD1_up[t,w1,w2] + b_FD2_up[t] <= p_dis_max ) # Constraint State of charge
 
-    optimize!(m_sto)
-
+            @constraint(m_sto, FD1_up_acc_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_FD1_up[t,w1,w2,w3] == f_FD1_y_up_tw[t,w1,w2,w3]*b_FD1_up[t,w1,w2] ) # The true power after corrected for acceptance of the bid
+            @constraint(m_sto, FD2_up_acc_con[t in T, w1 in W1], p_FD2_up[t,w1] == f_FD2_y_up_tw[t,w1]*b_FD2_up[t] ) # The true power after corrected for acceptance of the bid
+            @constraint(m_sto, FD1_dn_acc_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_FD1_dn[t,w1,w2,w3] == f_FD1_y_dn_tw[t,w1,w2,w3]*b_FD1_dn[t,w1,w2] ) # The true power after corrected for acceptance of the bid
+            @constraint(m_sto, FD2_dn_acc_con[t in T, w1 in W1], p_FD2_dn[t,w1] == f_FD2_y_dn_tw[t,w1]*b_FD2_dn[t] ) # The true power after corrected for acceptance of the bid
+     
+            optimize!(m_sto)
+        end # end of elapsed time
+    end # end of time
     @info("Stochastic model terminates with status: $(termination_status(m_sto))")
     if termination_status(m_sto) == MOI.OPTIMAL
-        sto_solution = Dict(
+        sto_solution = Dict("time" => result_time,
             # Input
             "f_FD2_up_tw_input" => f_FD2_up_tw[T,W1],
             "f_FD2_dn_tw_input" => f_FD2_dn_tw[T,W1],
@@ -148,6 +156,7 @@ function create_bid_stochastic(Data, sto_solution)
     size_W1 = size(Data["f_FD1_up_tw"])[2]
     size_W2 = size(Data["f_FD1_up_tw"])[3]
     size_W3 = size(Data["f_FD1_up_tw"])[4]
+    time = sto_solution["time"]
 
     b_FD2_up = sto_solution["b_FD2_up"]
     b_FD2_dn = sto_solution["b_FD2_dn"]
@@ -199,7 +208,7 @@ function create_bid_stochastic(Data, sto_solution)
     C_Deg_t = (p_all_dn .+ p_all_up)./(2*sto_solution["SOC_max"]) .* sto_solution["Cost_per_cycle"] 
     obj_t = G_FD2_t + G_FD1_t + G_DA_t - C_Deg_t
     
-    Bid_Results = Dict(
+    Bid_Results = Dict("time" => time,
                     "obj_t" => obj_t[:,1], #Flatten array
                     "G_FD2" => sto_solution["G_FD2"],
                     "G_DA" => sto_solution["G_DA"],
