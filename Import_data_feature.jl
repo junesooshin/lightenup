@@ -16,63 +16,6 @@ function data_import_Feature(Data_all, forecast_data, Data_index, Feature_Select
     # Training data:
     Data_train = Data_all[N_train_flat, :]
 
-    #println(Data_train[5:7,2])
-    #println(Data_train[(5+24):(7+24),2])
-    #=
-    if temporal == true
-        temporal_relation = [0.8, 0.4, 0.3, 0.2, 0.1, 0.8]
-        temporal_relation = temporal_relation / sum(temporal_relation)
-        block_size = 24
-        num_blocks = size(Data_train, 1) ÷ block_size
-        
-        num_features = size(Data_train, 2)
-
-        for i in 1:num_blocks
-            start_index = (i - 1) * block_size + 1
-            end_index = i * block_size
-            
-            for f in 1:num_features
-                #println(temporal_relation[i])
-                #println(Data_train[start_index:end_index, :] .* temporal_relation[i])
-                #map!(x -> x * temporal_relation[i], Data_train[start_index:end_index, :] )
-                #Data_train[start_index:end_index, f] = 
-                println(Data_train[5:7, f] .* temporal_relation[i])
-                Data_train[5:7, f] = Data_train[5:7, f] .* temporal_relation[i]
-                println(Data_train[5:7, f])
-            end
-        end
-        #println(Data_train[5:7,2])
-        #println(Data_train[(5+24):(7+24),2])
-    end=#
-    if temporal
-        temporal_relation = [0.8, 0.4, 0.3, 0.2, 0.1, 0.8]
-        temporal_relation = temporal_relation / sum(temporal_relation)
-        block_size = 24
-        num_blocks = size(Data_train, 1) ÷ block_size
-        num_features = size(Data_train, 2)
-    
-        # Convert temporal_relation to a 2D array
-        #temporal_relation = repeat(temporal_relation, outer=(block_size, 1))
-        data_w_relation = zeros(size(Data_train))
-        for i in 1:num_blocks
-            start_index = (i - 1) * block_size + 1
-            end_index = i * block_size
-            # for f in 1:num_features
-            #     #temp_array = similar(Data_train[start_index:end_index, f])  # Create a temporary array
-            #     #@views temp_array .= Data_train[start_index:end_index, f] .* temporal_relation[i]  # Perform element-wise multiplication
-            #     #Data_train[start_index:end_index, f] .= temp_array  # Assign the result back to Data_train
-                
-            #     for h in start_index:end_index
-            #         # temp_array = similar(Data_train[h, f])  # Create a temporary array
-            #         # @views temp_array = Data_train[h, f] * temporal_relation[i]  # Perform element-wise multiplication
-            #         Data_train[h, f] = Data_train[h, f] .* temporal_relation[i]  # Assign the result back to Data_train
-            #     end
-            # end
-            data_w_relation[start_index:end_index, :] .= Data_train[start_index:end_index, :] .* temporal_relation[i]
-        end
-        Data_train = DataFrame(data_w_relation, names(Data_train))
-    end
-
     if scaling == true
         train_df, Min_train, Max_train = min_max_scaler(Data_train, "train", false,false)
     elseif scaling == false
@@ -161,6 +104,24 @@ function data_import_Feature(Data_all, forecast_data, Data_index, Feature_Select
 
     end
 
+    #Add temporal relations to the input prices (as forgetting factor)
+    if temporal
+        temporal_relation = [0.1, 0.2, 0.3, 0.4, 0.8, 0.8]
+        temporal_relation = temporal_relation / sum(temporal_relation)
+        temp_relation_matrix = reshape(repeat(temporal_relation,inner=24),(24,6))
+    
+        lambda_DA = lambda_DA.*temp_relation_matrix
+        lambda_FD1_dn = lambda_FD1_dn.*temp_relation_matrix
+        lambda_FD2_dn = lambda_FD2_dn.*temp_relation_matrix
+        lambda_FD1_up = lambda_FD1_up.*temp_relation_matrix
+        lambda_FD2_up = lambda_FD2_up.*temp_relation_matrix
+        a_up_t = a_up_t.*temp_relation_matrix
+        a_dn_t = a_dn_t.*temp_relation_matrix
+        f_FD1_y_dn_t = f_FD1_y_dn_t.*temp_relation_matrix
+        f_FD2_y_dn_t = f_FD2_y_dn_t.*temp_relation_matrix
+        f_FD1_y_up_t = f_FD1_y_up_t.*temp_relation_matrix
+        f_FD2_y_up_t = f_FD2_y_up_t.*temp_relation_matrix
+    end
 
     ##########################               PARAMETERS              ############################
  
