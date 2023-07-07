@@ -97,7 +97,7 @@ function run_feature(processed_data, forecast_data, Architecture, d_train_set, m
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
     #Feature_Selection = ["Spot","FD1_down","FD2_down","FD1_up","FD2_up","Spot^2","Spot FD1_down","Spot FD2_down","Spot FD1_up","Spot FD2_up","FD1_down^2","FD1_down FD2_down","FD1_down FD1_up","FD1_down FD2_up","FD2_down^2","FD2_down FD1_up","FD2_down FD2_up","FD1_up^2","FD1_up FD2_up","FD2_up^2"]
     #Feature_Selection = ["Spot", "FD1_down", "FD2_down", "FD1_up", "FD2_up", "Spot^2", "Spot_FD1_down", "Spot_FD2_down", "Spot_FD1_up", "Spot_FD2_up", "FD1_down^2", "FD1_down_FD2_down", "FD1_down_FD1_up", "FD1_down_FD2_up", "FD2_down^2", "FD2_down_FD1_up", "FD2_down_FD2_up", "FD1_up^2", "FD1_up_FD2_up", "FD2_up^2"]
-    data_feature = data_import_Feature(processed_data, forecast_data, Data_index, Feature_Selection, scaling,false,"With forecast in input")
+    data_feature = data_import_Feature(processed_data, forecast_data, Data_index,gamma, Feature_Selection, scaling,false,"With forecast in input")
     #data_feature = data_import_Feature(processed_data, forecast_data, Data_index, Feature_Selection, scaling,false,"Without forecast in input")
 
     feature_solution = Feature_Model(data_feature, Architecture)
@@ -147,8 +147,8 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                     for test_day_2023 in test_day_2023_range
 
                         for acceptance_criteria_factor in acceptance_criteria_factor_range                        
-                            if length(acceptance_criteria_factor_range) > 1
-                                id = "acc_$(acceptance_criteria_factor)_f$(f)_d$(d_train_set)_upd$(moving_day)_t$(test_day_2023+moving_day)"
+                            if length(gamma_range) > 1
+                                id = "acc_$(gamma)_f$(f)_d$(d_train_set)_upd$(moving_day)_t$(test_day_2023+moving_day)"
                             else
                                 id = "f$(f)_d$(d_train_set)_upd$(moving_day)_t$(test_day_2023+moving_day)"
                             end
@@ -253,12 +253,12 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     return RT_profit, Exp_profit
 end
 
-gamma_range = [1]
-
+gamma_range = [0.8,0.85,0.9,0.95,1.0,1.1]
+#gamma_range = [1.0]
 #acceptance_criteria_factor_range = [1.00,1.05,1.1,1.2]
-acceptance_criteria_factor_range = [1.00]
+acceptance_criteria_factor_range = [1.0]
 
-#Models_range = ["feature","sto"]
+#Models_range = ["sto","oracle"]
 Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
@@ -268,10 +268,10 @@ d_train_set_range = [5]
 #d_train_set_range = 1:10 #Set one value for one test case 
 
 #moving_day_range = 0   #(within range 0:87)
-moving_day_range = 0:87 #(within range 0:87)
+moving_day_range = 0:5 #(within range 0:87)
 
-#forecast_range = ["forecast_all2"]
-forecast_range = ["forecast_all2_acc_perf"]
+forecast_range = ["forecast_all1"]
+#forecast_range = ["forecast_all2_acc_perf"]
 #forecast_range = ["forecast_allfeature"]
 #forecast_range = ["forecast_all0","forecast_all2"]
 #forecast_range = ["forecast_all0_acc","forecast_all2_acc"]

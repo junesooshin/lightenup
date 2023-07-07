@@ -1,6 +1,6 @@
 #data import functions for Feature model
 
-function data_import_Feature(Data_all, forecast_data, Data_index, Feature_Selection, scaling,temporal = false, Model_configuration = "Without forecast in input")
+function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature_Selection, scaling,temporal = false, Model_configuration = "Without forecast in input")
 
     N_train_flat = Data_index["N_train_flat"]
     D_train = Data_index["D_train"]
@@ -12,7 +12,27 @@ function data_import_Feature(Data_all, forecast_data, Data_index, Feature_Select
 
     #Features
     F = length(Feature_Selection)
-    
+
+
+    # Multiply prices with gamma
+    subset = ["FD1_down", "FD2_down", "FD1_up", "FD2_up"]
+
+    # Create a copy of the data_import array
+    Data_all_mod = copy(Data_all)
+    Data_all_mod_prices_copy = copy(Data_all[:, subset])
+    Data_all_mod_prices = Data_all_mod_prices_copy.* gamma
+
+    # Update the modified prices in the data_import_mod array
+    Data_all_mod[:, subset] = Data_all_mod_prices
+
+    # Multiply prices with gamma
+    #subset = ["FD1_down","FD2_down","FD1_up","FD2_up"]
+    #Data_all_mod = zeros(size(Data_all,1),size(Data_all,2))
+    #Data_all_mod_prices = zeros(size(Data_all,1),length(subset))
+    #Data_all_mod_prices = Data_all[:,subset].*gamma
+    #Data_all_mod = Data_all
+    #Data_all_mod[:,subset] = Data_all_mod_prices
+
     # Training data:
     Data_train = Data_all[N_train_flat, :]
 

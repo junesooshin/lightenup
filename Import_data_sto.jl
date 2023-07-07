@@ -9,12 +9,23 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
     N_forecast_flat = Data_index["N_forecast_flat"]
 
     # Multiply prices with gamma
-    subset = ["FD1_down","FD2_down","FD1_up","FD2_up"]
-    data_import_mod = zeros(size(data_import,1),size(data_import,2))
-    data_import_mod_prices = zeros(size(data_import,1),length(subset))
-    data_import_mod_prices = data_import[:,subset].*gamma
-    data_import_mod = data_import
-    data_import_mod[:,subset] = data_import_mod_prices
+    subset = ["FD1_down", "FD2_down", "FD1_up", "FD2_up"]
+
+    # Create a copy of the data_import array
+    data_import_mod = copy(data_import)
+    data_import_mod_prices_copy = copy(data_import[:, subset])
+    data_import_mod_prices = data_import_mod_prices_copy.* gamma
+
+    # Update the modified prices in the data_import_mod array
+    data_import_mod[:, subset] = data_import_mod_prices
+
+
+    #subset = ["FD1_down","FD2_down","FD1_up","FD2_up"]
+    #data_import_mod = zeros(size(data_import,1),size(data_import,2))
+    #data_import_mod_prices = zeros(size(data_import,1),length(subset))
+    #data_import_mod_prices = data_import[:,subset].*gamma
+    #data_import_mod = data_import
+    #data_import_mod[:,subset] = data_import_mod_prices
 
     df_train = data_import_mod[N_train_flat, :]
     no_days = floor(Int, size(df_train)[1]/24)
