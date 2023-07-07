@@ -1,6 +1,6 @@
 #data import function for deterministic model
 
-function data_import_Deterministic(forecast_data, Data_index)
+function data_import_Deterministic(forecast_data, Data_index,gamma)
 
     #Battery data
     Data_Battery = Battery_Specifications("Samsung_SDI_E3_R135_Battery")
@@ -12,20 +12,29 @@ function data_import_Deterministic(forecast_data, Data_index)
     p_ch_max = Data_Battery["p_ch_max"]
     Cost_per_cycle = Data_Battery["Cost_per_cycle"]
 
+
+    # Multiply prices with gamma
+    subset = ["FD1_down","FD2_down","FD1_up","FD2_up"]
+    forecast_data_mod = zeros(size(forecast_data,1),size(forecast_data,2))
+    forecast_data_mod_prices = zeros(size(forecast_data,1),length(subset))
+    forecast_data_mod_prices = forecast_data[:,subset].*gamma
+    forecast_data_mod = forecast_data
+    forecast_data_mod[:,subset] = forecast_data_mod_prices
+
     #Forecasts
     forecast_idx = Data_index["N_forecast_flat"]
 
-    f_lambda_FD1_dn = forecast_data[forecast_idx, "FD1_down"]
-    f_lambda_FD2_dn = forecast_data[forecast_idx, "FD2_down"]
-    f_lambda_FD1_up   = forecast_data[forecast_idx, "FD1_up"]
-    f_lambda_FD2_up   = forecast_data[forecast_idx, "FD2_up"]
-    FD1_down_accept_price = forecast_data[forecast_idx, "FD1_down_percentage"]
-    FD2_down_accept_price = forecast_data[forecast_idx, "FD2_down_percentage"]
-    FD1_up_accept_price   = forecast_data[forecast_idx, "FD1_up_percentage"]
-    FD2_up_accept_price   = forecast_data[forecast_idx, "FD2_up_percentage"]
-    f_DA_t =     forecast_data[forecast_idx, "Spot"]
-    f_a_up_t   = forecast_data[forecast_idx, "FD_act_up"]
-    f_a_dn_t   = forecast_data[forecast_idx, "FD_act_down"]
+    f_lambda_FD1_dn = forecast_data_mod[forecast_idx, "FD1_down"]
+    f_lambda_FD2_dn = forecast_data_mod[forecast_idx, "FD2_down"]
+    f_lambda_FD1_up   = forecast_data_mod[forecast_idx, "FD1_up"]
+    f_lambda_FD2_up   = forecast_data_mod[forecast_idx, "FD2_up"]
+    FD1_down_accept_price = forecast_data_mod[forecast_idx, "FD1_down_percentage"]
+    FD2_down_accept_price = forecast_data_mod[forecast_idx, "FD2_down_percentage"]
+    FD1_up_accept_price   = forecast_data_mod[forecast_idx, "FD1_up_percentage"]
+    FD2_up_accept_price   = forecast_data_mod[forecast_idx, "FD2_up_percentage"]
+    f_DA_t =     forecast_data_mod[forecast_idx, "Spot"]
+    f_a_up_t   = forecast_data_mod[forecast_idx, "FD_act_up"]
+    f_a_dn_t   = forecast_data_mod[forecast_idx, "FD_act_down"]
 
     #Export for a selected forecast/test day
     Data = Dict("Time" => [i for i in 1:24], 

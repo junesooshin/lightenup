@@ -162,7 +162,11 @@ def plot_each_test_day_Profit(data,models,x_axis,drawstyle,save = False):
     plt.show()
     
 
-def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Deterministic', 'Stochastic', 'Feature','Oracle'], x_axis_label = "Forecasts", x_axis_selection = [0,1,2], x_axis_tick_label = [1,2,3], Selected_Profit = ['Expected', 'Realized'], barwidth = 0.1, pdf_name = 'Profit_Bar_plot', ShowEachTestDay = False,save = False):
+def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Deterministic', 'Stochastic', 'Feature','Oracle'], x_axis_label = "Forecasts", x_axis_selection = [0,1,2], x_axis_tick_label = [1,2,3], 
+                     y_axis_label =  'Profit [\u20AC/day]', Selected_Profit = ['Expected', 'Realized'], 
+                     barwidth = 0.1, ylim = "",
+                     bbox_to_anchor=(1.02, 0.9),legends = ['Rule', 'Deterministic', 'Stochastic', 'Feature','Oracle','Expected','Realized'], 
+                     ShowEachTestDay = False, pdf_name = 'Profit_Bar_plot' ,save = False):
 
     # Sample data
     #Array = np.random.rand(3, 6, 88, 5, 2)
@@ -216,7 +220,7 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
 
     # Fixed settings
 
-    y_axis_label = 'Profit [\u20AC/day]'
+    y_axis_label = y_axis_label
     test_days = np.arange(Array.shape[2])
 
     legend_labels = models
@@ -239,7 +243,7 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
         
     size_around_tick = barwidth * bar_count / 2 + barwidth/2   
 
-    print(bar_list)
+    
 
     # Create the plot
     fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
@@ -307,11 +311,12 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
                         
                         ax.scatter(x_position,Array[f,s,j_mod,k_mod],s=2, edgecolor=edgecolor, color=color)
 
+
                 count_k = count_k + 1
             count_j = count_j + 1
 
-
-
+    if ylim != "":
+        ax.set_ylim(ylim[0], ylim[1])
 
     # Set the x-axis ticks and tick labels
     
@@ -342,21 +347,24 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
     legend_handles = []
 
     for label, color in zip(legend_labels, legend_colors):
-        rect = plt.Rectangle((0, 0), 1, 1, color=color, label=label)
-        rect.set_edgecolor(edgecolor)
-        legend_handles.append(rect)
+        if label in legends:
+            rect = plt.Rectangle((0, 0), 1, 1, color=color, label=label)
+            rect.set_edgecolor(edgecolor)
+            legend_handles.append(rect)
 
 
 
-    for label, pattern in zip(fill_patterns_label, fill_patterns): 
-        legend_handles.append(plt.Rectangle((0, 0), 1, 1, facecolor='white', edgecolor=edgecolor,  hatch=pattern, label=label))
+    for label, pattern in zip(fill_patterns_label, fill_patterns):
+        if label in legends: 
+            legend_handles.append(plt.Rectangle((0, 0), 1, 1, facecolor='white', edgecolor=edgecolor,  hatch=pattern, label=label))
 
     if "Oracle" in Selected_models:
         # Create legend for the horizontal line
-        legend_handles.append(plt.Line2D([0], [0], color=linecolor, linestyle=linestyle, label=linelabel,linewidth=linewidth))
+        if "Oracle" in legends:
+            legend_handles.append(plt.Line2D([0], [0], color=linecolor, linestyle=linestyle, label=linelabel,linewidth=linewidth))
     
     # Show the legend
-    ax.legend(handles=legend_handles,bbox_to_anchor=(1.02, 0.9), loc='upper left',prop={'size': 14})
+    ax.legend(handles=legend_handles,bbox_to_anchor=bbox_to_anchor, loc='upper left',prop={'size': 14})
 
 
 

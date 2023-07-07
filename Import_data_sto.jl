@@ -1,6 +1,6 @@
 #data import function for stochastic model
 
-function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, W3,temporal = false,correlation = false,Model_configuration = "Without forecast in input")
+function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1, W2, W3,temporal = false,correlation = false,Model_configuration = "Without forecast in input")
     # Import parameters for stochastic model
     Data_Battery = Battery_Specifications("Samsung_SDI_E3_R135_Battery")
 
@@ -8,7 +8,15 @@ function data_import_stochastic(data_import, forecast_data, Data_index, W1, W2, 
     N_train_flat = Data_index["N_train_flat"]
     N_forecast_flat = Data_index["N_forecast_flat"]
 
-    df_train = data_import[N_train_flat, :]
+    # Multiply prices with gamma
+    subset = ["FD1_down","FD2_down","FD1_up","FD2_up"]
+    data_import_mod = zeros(size(data_import,1),size(data_import,2))
+    data_import_mod_prices = zeros(size(data_import,1),length(subset))
+    data_import_mod_prices = data_import[:,subset].*gamma
+    data_import_mod = data_import
+    data_import_mod[:,subset] = data_import_mod_prices
+
+    df_train = data_import_mod[N_train_flat, :]
     no_days = floor(Int, size(df_train)[1]/24)
 
     #Extract each column and reshape
