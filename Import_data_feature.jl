@@ -53,23 +53,24 @@ function data_import_Feature(Data_all, forecast_data, Data_index, Feature_Select
     
         # Convert temporal_relation to a 2D array
         #temporal_relation = repeat(temporal_relation, outer=(block_size, 1))
-    
+        data_w_relation = zeros(size(Data_train))
         for i in 1:num_blocks
             start_index = (i - 1) * block_size + 1
             end_index = i * block_size
-            
-            for f in 1:num_features
-                #temp_array = similar(Data_train[start_index:end_index, f])  # Create a temporary array
-                #@views temp_array .= Data_train[start_index:end_index, f] .* temporal_relation[i]  # Perform element-wise multiplication
-                #Data_train[start_index:end_index, f] .= temp_array  # Assign the result back to Data_train
+            # for f in 1:num_features
+            #     #temp_array = similar(Data_train[start_index:end_index, f])  # Create a temporary array
+            #     #@views temp_array .= Data_train[start_index:end_index, f] .* temporal_relation[i]  # Perform element-wise multiplication
+            #     #Data_train[start_index:end_index, f] .= temp_array  # Assign the result back to Data_train
                 
-                for h in start_index:end_index
-                    temp_array = similar(Data_train[h, f])  # Create a temporary array
-                    @views temp_array = Data_train[h, f] * temporal_relation[i]  # Perform element-wise multiplication
-                    Data_train[h, f] = temp_array  # Assign the result back to Data_train
-                end
-            end
+            #     for h in start_index:end_index
+            #         # temp_array = similar(Data_train[h, f])  # Create a temporary array
+            #         # @views temp_array = Data_train[h, f] * temporal_relation[i]  # Perform element-wise multiplication
+            #         Data_train[h, f] = Data_train[h, f] .* temporal_relation[i]  # Assign the result back to Data_train
+            #     end
+            # end
+            data_w_relation[start_index:end_index, :] .= Data_train[start_index:end_index, :] .* temporal_relation[i]
         end
+        Data_train = DataFrame(data_w_relation, names(Data_train))
     end
 
     if scaling == true
