@@ -18,20 +18,18 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     subset = ["FD1_down", "FD2_down", "FD1_up", "FD2_up"]
 
     # Create a copy of the data_import array
-    Data_all_mod = copy(Data_all)
-    Data_all_mod_prices_copy = copy(Data_all[:, subset])
-    Data_all_mod_prices = Data_all_mod_prices_copy.* gamma
+    #Data_all_mod = copy(Data_all)
+    #Data_all_mod_prices_copy = copy(Data_all[:, subset])
+    forecast_data_mod = copy(forecast_data)
+    forecast_data_mod_prices_copy = copy(forecast_data[:,subset])
+    
+    #Data_all_mod_prices = Data_all_mod_prices_copy.* gamma
+    forecast_data_mod_prices = forecast_data_mod_prices_copy.* gamma
 
     # Update the modified prices in the data_import_mod array
-    Data_all_mod[:, subset] = Data_all_mod_prices
+    #Data_all_mod[:, subset] = Data_all_mod_prices
+    forecast_data_mod[:, subset] = forecast_data_mod_prices
 
-    # Multiply prices with gamma
-    #subset = ["FD1_down","FD2_down","FD1_up","FD2_up"]
-    #Data_all_mod = zeros(size(Data_all,1),size(Data_all,2))
-    #Data_all_mod_prices = zeros(size(Data_all,1),length(subset))
-    #Data_all_mod_prices = Data_all[:,subset].*gamma
-    #Data_all_mod = Data_all
-    #Data_all_mod[:,subset] = Data_all_mod_prices
 
     # Training data:
     Data_train = Data_all[N_train_flat, :]
@@ -43,7 +41,7 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     end
 
     X = reshape(Matrix(train_df[:,Feature_Selection]), (length(H), length(D_train), F))
-    X_train_f = reshape(Matrix(forecast_data[N_train_flat,Feature_Selection]), (length(H), length(D_train), F))
+    X_train_f = reshape(Matrix(forecast_data_mod[N_train_flat,Feature_Selection]), (length(H), length(D_train), F))
 
     n_features = size(X)[3]   # Number of features
     n_train_days = size(X)[2] # Total number of training days
@@ -55,9 +53,9 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
 
     # Forecast data
     if scaling == true
-        forecast_df, Min_forecast,Max_forecast = min_max_scaler(forecast_data, "test", Max_train,Min_train)
+        forecast_df, Min_forecast,Max_forecast = min_max_scaler(forecast_data_mod, "test", Max_train,Min_train)
     elseif scaling == false
-        forecast_df = forecast_data
+        forecast_df = forecast_data_mod
     end
     
     X_f = reshape(Matrix(forecast_df[N_forecast_flat, Feature_Selection]),(length(H),1,F))
@@ -85,17 +83,17 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     #########################            FORECASTED PRICES           ############################
 
     # ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
-    f_FD2_up_t = reshape(forecast_data[N_forecast_flat,"FD2_up"], (length(H)) ) 
-    f_FD2_dn_t = reshape(forecast_data[N_forecast_flat,"FD2_down"], (length(H)) ) 
-    f_FD1_up_t = reshape(forecast_data[N_forecast_flat,"FD1_up"], (length(H)) ) 
-    f_FD1_dn_t = reshape(forecast_data[N_forecast_flat,"FD1_down"], (length(H)) ) 
-    f_DA_t     = reshape(forecast_data[N_forecast_flat,"Spot"], (length(H)) ) 
-    f_a_up_t   = reshape(forecast_data[N_forecast_flat,"FD_act_up"], (length(H)) ) 
-    f_a_dn_t   = reshape(forecast_data[N_forecast_flat,"FD_act_down"], (length(H)) ) 
-    f_FD1_down_percentage = reshape(forecast_data[N_forecast_flat,"FD1_up_percentage"], (length(H)) )   
-    f_FD2_up_percentage = reshape(forecast_data[N_forecast_flat,"FD2_up_percentage"], (length(H)) )    
-    f_FD1_up_percentage = reshape(forecast_data[N_forecast_flat,"FD1_down_percentage"], (length(H)) )  
-    f_FD2_down_percentage = reshape(forecast_data[N_forecast_flat,"FD2_down_percentage"], (length(H)) ) 
+    f_FD2_up_t = reshape(forecast_data_mod[N_forecast_flat,"FD2_up"], (length(H)) ) 
+    f_FD2_dn_t = reshape(forecast_data_mod[N_forecast_flat,"FD2_down"], (length(H)) ) 
+    f_FD1_up_t = reshape(forecast_data_mod[N_forecast_flat,"FD1_up"], (length(H)) ) 
+    f_FD1_dn_t = reshape(forecast_data_mod[N_forecast_flat,"FD1_down"], (length(H)) ) 
+    f_DA_t     = reshape(forecast_data_mod[N_forecast_flat,"Spot"], (length(H)) ) 
+    f_a_up_t   = reshape(forecast_data_mod[N_forecast_flat,"FD_act_up"], (length(H)) ) 
+    f_a_dn_t   = reshape(forecast_data_mod[N_forecast_flat,"FD_act_down"], (length(H)) ) 
+    f_FD1_down_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD1_up_percentage"], (length(H)) )   
+    f_FD2_up_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD2_up_percentage"], (length(H)) )    
+    f_FD1_up_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD1_down_percentage"], (length(H)) )  
+    f_FD2_down_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD2_down_percentage"], (length(H)) ) 
 
     # Modify training if forecast is included in training for Feature models
     if Model_configuration == "With forecast in input"

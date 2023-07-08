@@ -20,11 +20,11 @@ include("Model_Feature.jl")
 include("Model_Realtime.jl")
 
 #Functions to run models
-function run_rule(processed_data, forecast_data, d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023,acceptance_criteria_factor)
+function run_rule(processed_data, forecast_data, d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023,acceptance_criteria_factor,gamma)
     
     #Rule-based model
     Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
-    data_rule = data_import_Rule(forecast_data,Data_index)
+    data_rule = data_import_Rule(forecast_data,Data_index,gamma)
 
     Bid_Results_rule = baseline_model_DA_and_FCR_D(data_rule, Threshold_Max_coef, Threshold_Min_coef)
 
@@ -157,7 +157,7 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                             
 
                             if issubset(["rule"],Models_range)  == true # Check if rule need to be runned
-                                result_rule = run_rule(processed_data, forecast_data, d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023,acceptance_criteria_factor)
+                                result_rule = run_rule(processed_data, forecast_data, d_train_set, moving_day, Threshold_Max_coef, Threshold_Min_coef, test_day_2023,acceptance_criteria_factor,gamma)
                                 RT_rule_profit = result_rule["RT"]["profit"]
                                 Exp_rule_profit = sum(result_rule["Bid"]["obj_t"])
                                 if save_all == true
@@ -253,12 +253,12 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     return RT_profit, Exp_profit
 end
 
-gamma_range = [0.8,0.85,0.9,0.95,1.0,1.1]
-#gamma_range = [1.0]
+#gamma_range = [0.8,0.83,0.85,0.87,0.9,0.93,0.95,0.97, 1.0,1.05,1.1]
+gamma_range = [0.85]
 #acceptance_criteria_factor_range = [1.00,1.05,1.1,1.2]
 acceptance_criteria_factor_range = [1.0]
 
-#Models_range = ["sto","oracle"]
+Models_range = ["feature"]
 Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
@@ -268,7 +268,7 @@ d_train_set_range = [5]
 #d_train_set_range = 1:10 #Set one value for one test case 
 
 #moving_day_range = 0   #(within range 0:87)
-moving_day_range = 0:5 #(within range 0:87)
+moving_day_range = 0:87 #(within range 0:87)
 
 forecast_range = ["forecast_all1"]
 #forecast_range = ["forecast_all2_acc_perf"]

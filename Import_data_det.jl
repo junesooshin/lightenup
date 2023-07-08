@@ -25,13 +25,6 @@ function data_import_Deterministic(forecast_data, Data_index,gamma)
     # Update the modified prices in the data_import_mod array
     forecast_data_mod[:, subset] = forecast_data_mod_prices
 
-    # Multiply prices with gamma
-    #subset = ["FD1_down","FD2_down","FD1_up","FD2_up"]
-    #forecast_data_mod = zeros(size(forecast_data,1),size(forecast_data,2))
-    #forecast_data_mod_prices = zeros(size(forecast_data,1),length(subset))
-    #forecast_data_mod_prices = forecast_data[:,subset].*gamma
-    #forecast_data_mod = forecast_data
-    #forecast_data_mod[:,subset] = forecast_data_mod_prices
 
     #Forecasts
     forecast_idx = Data_index["N_forecast_flat"]

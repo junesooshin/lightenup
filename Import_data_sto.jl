@@ -12,12 +12,16 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
     subset = ["FD1_down", "FD2_down", "FD1_up", "FD2_up"]
 
     # Create a copy of the data_import array
-    data_import_mod = copy(data_import)
-    data_import_mod_prices_copy = copy(data_import[:, subset])
-    data_import_mod_prices = data_import_mod_prices_copy.* gamma
+    #data_import_mod = copy(data_import)
+    #data_import_mod_prices_copy = copy(data_import[:, subset])
+    forecast_data_mod = copy(forecast_data)
+    forecast_data_mod_prices_copy = copy(forecast_data[:,subset])
+    #data_import_mod_prices = data_import_mod_prices_copy.* gamma
+    forecast_data_mod_prices = forecast_data_mod_prices_copy.* gamma
 
     # Update the modified prices in the data_import_mod array
-    data_import_mod[:, subset] = data_import_mod_prices
+    #data_import_mod[:, subset] = data_import_mod_prices
+    forecast_data_mod[:, subset] = forecast_data_mod_prices
 
 
     #subset = ["FD1_down","FD2_down","FD1_up","FD2_up"]
@@ -27,7 +31,7 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
     #data_import_mod = data_import
     #data_import_mod[:,subset] = data_import_mod_prices
 
-    df_train = data_import_mod[N_train_flat, :]
+    df_train = data_import[N_train_flat, :]
     no_days = floor(Int, size(df_train)[1]/24)
 
     #Extract each column and reshape
@@ -44,17 +48,17 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
     FD2_up_percentage = reshape(df_train[:,"FD2_up_percentage"], (24, no_days))
 
     # #Get forecast data and reshape
-    f_DA_t = reshape(forecast_data[N_forecast_flat, "Spot"], (24, 1))
-    f_lambda_FD1_dn_t = reshape(forecast_data[N_forecast_flat, "FD1_down"], (24, 1))
-    f_lambda_FD2_dn_t = reshape(forecast_data[N_forecast_flat, "FD2_down"], (24, 1))
-    f_lambda_FD1_up_t   = reshape(forecast_data[N_forecast_flat, "FD1_up"], (24, 1))
-    f_lambda_FD2_up_t   = reshape(forecast_data[N_forecast_flat, "FD2_up"], (24, 1))
-    f_act_up_t = reshape(forecast_data[N_forecast_flat,"FD_act_up"], (24, 1))
-    f_act_dn_t = reshape(forecast_data[N_forecast_flat,"FD_act_down"], (24, 1))
-    f_FD1_down_percentage = reshape(forecast_data[N_forecast_flat,"FD1_down_percentage"], (24, 1))
-    f_FD2_down_percentage = reshape(forecast_data[N_forecast_flat,"FD2_down_percentage"], (24, 1))
-    f_FD1_up_percentage = reshape(forecast_data[N_forecast_flat,"FD1_up_percentage"], (24, 1))
-    f_FD2_up_percentage = reshape(forecast_data[N_forecast_flat,"FD2_up_percentage"], (24, 1))
+    f_DA_t = reshape(forecast_data_mod[N_forecast_flat, "Spot"], (24, 1))
+    f_lambda_FD1_dn_t = reshape(forecast_data_mod[N_forecast_flat, "FD1_down"], (24, 1))
+    f_lambda_FD2_dn_t = reshape(forecast_data_mod[N_forecast_flat, "FD2_down"], (24, 1))
+    f_lambda_FD1_up_t   = reshape(forecast_data_mod[N_forecast_flat, "FD1_up"], (24, 1))
+    f_lambda_FD2_up_t   = reshape(forecast_data_mod[N_forecast_flat, "FD2_up"], (24, 1))
+    f_act_up_t = reshape(forecast_data_mod[N_forecast_flat,"FD_act_up"], (24, 1))
+    f_act_dn_t = reshape(forecast_data_mod[N_forecast_flat,"FD_act_down"], (24, 1))
+    f_FD1_down_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD1_down_percentage"], (24, 1))
+    f_FD2_down_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD2_down_percentage"], (24, 1))
+    f_FD1_up_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD1_up_percentage"], (24, 1))
+    f_FD2_up_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD2_up_percentage"], (24, 1))
 
     # Forecast price comes from the mean of the scenarios
     vol_avg_price_FD1_down = mean(FD1_down_train, dims=2)
