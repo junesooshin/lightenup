@@ -1,6 +1,6 @@
 #data import functions for Feature model
 
-function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature_Selection, scaling,temporal = false, Model_configuration = "Without forecast in input")
+function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature_Selection, scaling,temporal = false, Acceptance = "", Model_configuration = "Without forecast in input")
 
     N_train_flat = Data_index["N_train_flat"]
     D_train = Data_index["D_train"]
@@ -13,13 +13,10 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     #Features
     F = length(Feature_Selection)
 
-
     # Multiply prices with gamma
     subset = ["FD1_down", "FD2_down", "FD1_up", "FD2_up"]
 
     # Create a copy of the data_import array
-    #Data_all_mod = copy(Data_all)
-    #Data_all_mod_prices_copy = copy(Data_all[:, subset])
     forecast_data_mod = copy(forecast_data)
     forecast_data_mod_prices_copy = copy(forecast_data[:,subset])
     
@@ -27,7 +24,6 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     forecast_data_mod_prices = forecast_data_mod_prices_copy.* gamma
 
     # Update the modified prices in the data_import_mod array
-    #Data_all_mod[:, subset] = Data_all_mod_prices
     forecast_data_mod[:, subset] = forecast_data_mod_prices
 
 
@@ -47,10 +43,6 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     n_train_days = size(X)[2] # Total number of training days
     n_hours = size(X)[1]      # Total number of hours
 
-    # Forgetting factor (D)
-    # Column names [1.0,0.9,0.96,0.98,0.985,0.99,0.995,0.999]
-    #forgetting = forgettingFactor_data[D_train,"1.0"]
-
     # Forecast data
     if scaling == true
         forecast_df, Min_forecast,Max_forecast = min_max_scaler(forecast_data_mod, "test", Max_train,Min_train)
@@ -62,13 +54,8 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     
 
 
+    #########################            SAMPLE DATA               ############################
 
-    # The acceptance in the Feature model is just the difference in volume between D-1 and D-2 for up and down
-    # Not scaled since they are already percentages
-    f_FD1_y_up_t = reshape(Data_all[N_train_flat,"FD1_up_percentage"], (length(H), n_train_days) )   
-    f_FD2_y_up_t = reshape(Data_all[N_train_flat,"FD2_up_percentage"], (length(H), n_train_days) )    
-    f_FD1_y_dn_t = reshape(Data_all[N_train_flat,"FD1_down_percentage"], (length(H), n_train_days) )  
-    f_FD2_y_dn_t = reshape(Data_all[N_train_flat,"FD2_down_percentage"], (length(H), n_train_days) ) 
 
     #Activation not scaled since they are already in percentages
     a_up_t   = reshape(Data_all[N_train_flat,"FD_act_up"], (length(H), n_train_days) ) 
@@ -79,6 +66,14 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     lambda_FD2_dn = reshape(Data_train[:,"FD2_down"], (length(H), n_train_days)) 
     lambda_FD1_up = reshape(Data_train[:,"FD1_up"], (length(H), n_train_days)) 
     lambda_FD1_dn = reshape(Data_train[:,"FD1_down"], (length(H), n_train_days)) 
+
+    # The acceptance in the Feature model is just the difference in volume between D-1 and D-2 for up and down
+    # Not scaled since they are already percentages
+    FD1_up_percentage = reshape(Data_all[N_train_flat,"FD1_up_percentage"], (length(H), n_train_days) )   
+    FD2_up_percentage = reshape(Data_all[N_train_flat,"FD2_up_percentage"], (length(H), n_train_days) )    
+    FD1_down_percentage = reshape(Data_all[N_train_flat,"FD1_down_percentage"], (length(H), n_train_days) )  
+    FD2_down_percentage = reshape(Data_all[N_train_flat,"FD2_down_percentage"], (length(H), n_train_days) ) 
+
 
     #########################            FORECASTED PRICES           ############################
 
@@ -94,6 +89,55 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     f_FD2_up_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD2_up_percentage"], (length(H)) )    
     f_FD1_up_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD1_down_percentage"], (length(H)) )  
     f_FD2_down_percentage = reshape(forecast_data_mod[N_forecast_flat,"FD2_down_percentage"], (length(H)) ) 
+
+
+    ##################    Acceptance:     ###############################
+
+    # Either Volume based, 100 % or based on acceptance construction 
+
+    if Acceptance == "Junes"
+        @info("June Acceptance in Feature")
+        # 100 ACCEPTANCE FORECAST AND WEIGHTED FOR SAMPLE
+        f_FD1_down_accept = ones(size(f_FD1_down_percentage))
+        f_FD2_down_accept = ones(size(f_FD2_down_percentage))
+        f_FD1_up_accept = ones(size(f_FD1_up_percentage))
+        f_FD2_up_accept = ones(size(f_FD2_up_percentage))
+
+        FD1_down_accept = construct_acceptance(lambda_FD1_dn, f_FD1_dn_t)
+        FD2_down_accept = construct_acceptance(lambda_FD2_dn, f_FD2_dn_t)
+        FD1_up_accept = construct_acceptance(lambda_FD1_up, f_FD1_up_t)
+        FD2_up_accept = construct_acceptance(lambda_FD2_up, f_FD2_up_t)
+
+    elseif Acceptance == "100"
+        @info("100 Acceptance in Feature")
+        # 100 % ACCEPTANCE
+        f_FD1_down_accept = ones(size(f_FD1_down_percentage))
+        f_FD2_down_accept = ones(size(f_FD2_down_percentage))
+        f_FD1_up_accept = ones(size(f_FD1_up_percentage))
+        f_FD2_up_accept = ones(size(f_FD2_up_percentage))
+
+        FD1_down_accept = ones(size(FD1_down_percentage))
+        FD2_down_accept = ones(size(FD2_down_percentage))
+        FD1_up_accept = ones(size(FD1_up_percentage))
+        FD2_up_accept = ones(size(FD2_up_percentage))
+    else
+        @info("Volume Acceptance in Feature")
+        # VOLUME BASED ACCEPTANCE:
+        f_FD1_down_accept = f_FD1_down_percentage #Incorporate only volume acceptance
+        f_FD2_down_accept = f_FD2_down_percentage
+        f_FD1_up_accept = f_FD1_up_percentage
+        f_FD2_up_accept = f_FD2_up_percentage
+
+        FD1_down_accept = FD1_down_percentage    #Incorporate only volume acceptance
+        FD2_down_accept = FD2_down_percentage
+        FD1_up_accept = FD1_up_percentage
+        FD2_up_accept = FD2_up_percentage
+    end
+
+    f_FD1_y_dn_t = FD1_down_accept
+    f_FD2_y_dn_t = FD2_down_accept
+    f_FD1_y_up_t = FD1_up_accept
+    f_FD2_y_up_t = FD2_up_accept
 
     # Modify training if forecast is included in training for Feature models
     if Model_configuration == "With forecast in input"
@@ -113,10 +157,10 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
         a_up_t = cat(a_up_t, f_a_up_t,dims=(2))
         a_dn_t = cat(a_dn_t, f_a_dn_t,dims=(2))
 
-        f_FD1_y_dn_t = cat(f_FD1_y_dn_t, f_FD1_down_percentage,dims=(2))
-        f_FD2_y_dn_t = cat(f_FD2_y_dn_t, f_FD2_down_percentage,dims=(2))
-        f_FD1_y_up_t = cat(f_FD1_y_up_t, f_FD1_up_percentage,dims=(2))
-        f_FD2_y_up_t = cat(f_FD2_y_up_t, f_FD2_up_percentage,dims=(2))
+        f_FD1_y_dn_t = cat(FD1_down_accept, f_FD1_down_accept,dims=(2))
+        f_FD2_y_dn_t = cat(FD2_down_accept, f_FD2_down_accept,dims=(2))
+        f_FD1_y_up_t = cat(FD1_up_accept, f_FD1_up_accept,dims=(2))
+        f_FD2_y_up_t = cat(FD2_up_accept, f_FD2_up_accept,dims=(2))
         
         @info("Forecast added to input for optimization of the Feature model!")
 
@@ -124,6 +168,7 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
 
     #Add temporal relations to the input prices (as forgetting factor)
     if temporal
+        @info("Temporal added in Feature!")
         temporal_relation = [0.1, 0.2, 0.3, 0.4, 0.8, 0.8]
         temporal_relation = temporal_relation / sum(temporal_relation)
         temp_relation_matrix = reshape(repeat(temporal_relation,inner=24),(24,6))

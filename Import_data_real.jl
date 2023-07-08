@@ -1,6 +1,6 @@
 #data import functions for real-time operation model
 
-function data_import_real(data_import, Data_index, test_day, Bid_Results,acceptance_criteria_factor)
+function data_import_real(data_import, Data_index, test_day, Bid_Results)
     Data_Battery = Battery_Specifications("Samsung_SDI_E3_R135_Battery")
 
     first_h_test = Data_index["N_test"][:,test_day][1]
@@ -32,19 +32,19 @@ function data_import_real(data_import, Data_index, test_day, Bid_Results,accepta
     acceptance_FD2_down = zeros((24))
 
     for i in 1:24
-        if FD1_up_bid_price[i] <= FD1_up_price[i]*acceptance_criteria_factor
+        if FD1_up_bid_price[i] <= FD1_up_price[i]
             acceptance_FD1_up[i] = 1      
         end
         
-        if FD1_down_bid_price[i] <= FD1_down_price[i]*acceptance_criteria_factor
+        if FD1_down_bid_price[i] <= FD1_down_price[i]
             acceptance_FD1_down[i] = 1      
         end
 
-        if FD2_down_bid_price[i] <= FD2_down_price[i]*acceptance_criteria_factor
+        if FD2_down_bid_price[i] <= FD2_down_price[i]
             acceptance_FD2_down[i] = 1      
         end
 
-        if FD2_up_bid_price[i] <= FD2_up_price[i]*acceptance_criteria_factor
+        if FD2_up_bid_price[i] <= FD2_up_price[i]
             acceptance_FD2_up[i] = 1      
         end
     end

@@ -33,13 +33,39 @@ function data_import_Deterministic(forecast_data, Data_index,gamma)
     f_lambda_FD2_dn = forecast_data_mod[forecast_idx, "FD2_down"]
     f_lambda_FD1_up   = forecast_data_mod[forecast_idx, "FD1_up"]
     f_lambda_FD2_up   = forecast_data_mod[forecast_idx, "FD2_up"]
-    FD1_down_accept_price = forecast_data_mod[forecast_idx, "FD1_down_percentage"]
-    FD2_down_accept_price = forecast_data_mod[forecast_idx, "FD2_down_percentage"]
-    FD1_up_accept_price   = forecast_data_mod[forecast_idx, "FD1_up_percentage"]
-    FD2_up_accept_price   = forecast_data_mod[forecast_idx, "FD2_up_percentage"]
-    f_DA_t =     forecast_data_mod[forecast_idx, "Spot"]
+
+    f_DA_t     = forecast_data_mod[forecast_idx, "Spot"]
     f_a_up_t   = forecast_data_mod[forecast_idx, "FD_act_up"]
     f_a_dn_t   = forecast_data_mod[forecast_idx, "FD_act_down"]
+
+    f_FD1_down_percentage = forecast_data_mod[forecast_idx, "FD1_down_percentage"]
+    f_FD2_down_percentage = forecast_data_mod[forecast_idx, "FD2_down_percentage"]
+    f_FD1_up_percentage   = forecast_data_mod[forecast_idx, "FD1_up_percentage"]
+    f_FD2_up_percentage   = forecast_data_mod[forecast_idx, "FD2_up_percentage"]
+
+    if Acceptance == "Junes"
+        # 100 ACCEPTANCE FORECAST AND WEIGHTED FOR SAMPLE
+        f_FD1_down_accept = ones(size(f_FD1_down_percentage))
+        f_FD2_down_accept = ones(size(f_FD2_down_percentage))
+        f_FD1_up_accept = ones(size(f_FD1_up_percentage))
+        f_FD2_up_accept = ones(size(f_FD2_up_percentage))
+
+    elseif Acceptance == "100"
+        # 100 % ACCEPTANCE
+        f_FD1_down_accept = ones(size(f_FD1_down_percentage))
+        f_FD2_down_accept = ones(size(f_FD2_down_percentage))
+        f_FD1_up_accept = ones(size(f_FD1_up_percentage))
+        f_FD2_up_accept = ones(size(f_FD2_up_percentage))
+
+    else
+        # VOLUME BASED ACCEPTANCE:
+        f_FD1_down_accept = f_FD1_down_percentage #Incorporate only volume acceptance
+        f_FD2_down_accept = f_FD2_down_percentage
+        f_FD1_up_accept = f_FD1_up_percentage
+        f_FD2_up_accept = f_FD2_up_percentage
+
+    end
+
 
     #Export for a selected forecast/test day
     Data = Dict("Time" => [i for i in 1:24], 
@@ -50,10 +76,10 @@ function data_import_Deterministic(forecast_data, Data_index,gamma)
                 "f_FD2_dn_t" => f_lambda_FD2_dn,
                 "f_a_up_t" => f_a_up_t, 
                 "f_a_dn_t" => f_a_dn_t, 
-                "f_FD1_y_up_t" => FD1_up_accept_price, 
-                "f_FD1_y_dn_t" => FD1_down_accept_price, 
-                "f_FD2_y_up_t" => FD2_up_accept_price, 
-                "f_FD2_y_dn_t" => FD2_down_accept_price, 
+                "f_FD1_y_up_t" => f_FD1_up_accept, 
+                "f_FD1_y_dn_t" => f_FD1_down_accept, 
+                "f_FD2_y_up_t" => f_FD2_up_accept, 
+                "f_FD2_y_dn_t" => f_FD2_down_accept, 
                 "SOC_0" => SOC_0, 
                 "SOC_max" => SOC_max, 
                 "eta_dis" => eta_dis,

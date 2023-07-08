@@ -24,18 +24,6 @@ function Feature_Model(Data, Architecture)
     X_train_f = Data["X_train_f"] # All the forecast features to use in the training 
     X_f = Data["X_f"] # Forecasted feature for the bidding day D
 
-    
-
-    ## Concatenate X and X_f if forecast is used.
-    #if Model_configuration == "With forecast"
-    #    # Concatenate such that it go from: X:(24, 5, 5), X_f(24, 5) -> X(24,6,5)
-    #    println("hej")
-    #    println(size(X),size(X_f))
-    #    X_f = reshape(X_f,(24,5,1))
-    #    X = cat(X, X_f, dims=2)
-    #    println(size(X))
-    #end
-
     F = Data["n_features"] # Total number of features
 
 
@@ -63,7 +51,7 @@ function Feature_Model(Data, Architecture)
     a_up_t   = Data["a_up_t"] # 
     a_dn_t   = Data["a_dn_t"] # 
 
-    #### HOW CAN WE KNOW WHETHER WE GOT ACCEPTED???? 
+    #### ACCEPTANCE
     y_FD2_up =  Data["f_FD2_y_up_t"]
     y_FD2_dn =  Data["f_FD2_y_dn_t"]
     y_FD1_up =  Data["f_FD1_y_up_t"]

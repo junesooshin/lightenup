@@ -1,6 +1,6 @@
 #data import function for stochastic model
 
-function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1, W2, W3,temporal = false,correlation = false,Model_configuration = "Without forecast in input")
+function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1, W2, W3,temporal = false,correlation = false,Acceptance = "",Model_configuration = "Without forecast in input")
     # Import parameters for stochastic model
     Data_Battery = Battery_Specifications("Samsung_SDI_E3_R135_Battery")
 
@@ -12,24 +12,12 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
     subset = ["FD1_down", "FD2_down", "FD1_up", "FD2_up"]
 
     # Create a copy of the data_import array
-    #data_import_mod = copy(data_import)
-    #data_import_mod_prices_copy = copy(data_import[:, subset])
     forecast_data_mod = copy(forecast_data)
     forecast_data_mod_prices_copy = copy(forecast_data[:,subset])
-    #data_import_mod_prices = data_import_mod_prices_copy.* gamma
     forecast_data_mod_prices = forecast_data_mod_prices_copy.* gamma
 
     # Update the modified prices in the data_import_mod array
-    #data_import_mod[:, subset] = data_import_mod_prices
     forecast_data_mod[:, subset] = forecast_data_mod_prices
-
-
-    #subset = ["FD1_down","FD2_down","FD1_up","FD2_up"]
-    #data_import_mod = zeros(size(data_import,1),size(data_import,2))
-    #data_import_mod_prices = zeros(size(data_import,1),length(subset))
-    #data_import_mod_prices = data_import[:,subset].*gamma
-    #data_import_mod = data_import
-    #data_import_mod[:,subset] = data_import_mod_prices
 
     df_train = data_import[N_train_flat, :]
     no_days = floor(Int, size(df_train)[1]/24)
@@ -67,10 +55,50 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
     vol_avg_price_FD2_up = mean(FD2_up_train, dims=2)
     f_Spot_price = mean(spot_train, dims=2)
 
-    FD1_down_accept_price = construct_acceptance(FD1_down_train, vol_avg_price_FD1_down)
-    FD2_down_accept_price = construct_acceptance(FD2_down_train, vol_avg_price_FD2_down)
-    FD1_up_accept_price = construct_acceptance(FD1_up_train, vol_avg_price_FD1_up)
-    FD2_up_accept_price = construct_acceptance(FD2_up_train, vol_avg_price_FD2_up)
+
+
+    ##################    Acceptance:     ###############################
+
+    # Either Volume based, 100 % or based on acceptance construction 
+
+    if Acceptance == "Junes"
+        @info("June Acceptance in Stochastic")
+        # 100 ACCEPTANCE FORECAST AND WEIGHTED FOR SAMPLE
+        f_FD1_down_accept = ones(size(f_FD1_down_percentage))
+        f_FD2_down_accept = ones(size(f_FD2_down_percentage))
+        f_FD1_up_accept = ones(size(f_FD1_up_percentage))
+        f_FD2_up_accept = ones(size(f_FD2_up_percentage))
+
+        FD1_down_accept = construct_acceptance(FD1_down_train, f_lambda_FD1_dn_t)
+        FD2_down_accept = construct_acceptance(FD2_down_train, f_lambda_FD2_dn_t)
+        FD1_up_accept = construct_acceptance(FD1_up_train, f_lambda_FD1_up_t)
+        FD2_up_accept = construct_acceptance(FD2_up_train, f_lambda_FD2_up_t)
+
+    elseif Acceptance == "100"
+        @info("100% Acceptance in Stochastic")
+        # 100 % ACCEPTANCE
+        f_FD1_down_accept = ones(size(f_FD1_down_percentage))
+        f_FD2_down_accept = ones(size(f_FD2_down_percentage))
+        f_FD1_up_accept = ones(size(f_FD1_up_percentage))
+        f_FD2_up_accept = ones(size(f_FD2_up_percentage))
+
+        FD1_down_accept = ones(size(FD1_down_percentage))
+        FD2_down_accept = ones(size(FD2_down_percentage))
+        FD1_up_accept = ones(size(FD1_up_percentage))
+        FD2_up_accept = ones(size(FD2_up_percentage))
+    else 
+        @info("Volume Acceptance in Stochastic")
+        # VOLUME BASED ACCEPTANCE:
+        f_FD1_down_accept = f_FD1_down_percentage #Incorporate only volume acceptance
+        f_FD2_down_accept = f_FD2_down_percentage
+        f_FD1_up_accept = f_FD1_up_percentage
+        f_FD2_up_accept = f_FD2_up_percentage
+
+        FD1_down_accept = FD1_down_percentage    #Incorporate only volume acceptance
+        FD2_down_accept = FD2_down_percentage
+        FD1_up_accept = FD1_up_percentage
+        FD2_up_accept = FD2_up_percentage
+    end
 
     # Modify training if forecast is included in training for Learning models
     if Model_configuration == "With forecast in input"
@@ -89,10 +117,10 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
         FD_act_up_train = cat(FD_act_up_train, f_act_up_t,dims=(2))
         FD_act_down_train = cat(FD_act_down_train, f_act_dn_t,dims=(2))
 
-        FD1_down_percentage = cat(FD1_down_percentage, f_FD1_down_percentage,dims=(2))
-        FD2_down_percentage = cat(FD2_down_percentage, f_FD2_down_percentage,dims=(2))
-        FD1_up_percentage = cat(FD1_up_percentage, f_FD1_up_percentage,dims=(2))
-        FD2_up_percentage = cat(FD2_up_percentage, f_FD2_up_percentage,dims=(2))
+        FD1_down_accept = cat(FD1_down_accept, f_FD1_down_accept,dims=(2))
+        FD2_down_accept = cat(FD2_down_accept, f_FD2_down_accept,dims=(2))
+        FD1_up_accept = cat(FD1_up_accept, f_FD1_up_accept,dims=(2))
+        FD2_up_accept = cat(FD2_up_accept, f_FD2_up_accept,dims=(2))
 
         @info("Forecast added to input for optimization of the Stochastic model!")
 
@@ -106,6 +134,7 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
 
     #### Putting weights on it:
     if temporal == true
+        @info("Temporal added in Stochastic")
         temporal_relation = [0.8, 0.4, 0.3, 0.2, 0.1, 0.8]
         temporal_relation = temporal_relation / sum(temporal_relation)
 
@@ -113,6 +142,7 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
         temporal_relation = ones(W1) .* 1/W1
     end
     if correlation == true
+        @info("Correlation added in Stochastic")
         val_FD2_DA = (0.29 + 0.24) / 2
         val_DA_FD1 = (0.3 + 0.18) / 2
         val_FD2_FD1 = (0.6 + 0.49) / 2
@@ -161,20 +191,6 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
     f_FD1_dn_t = f_lambda_FD1_dn_t
     f_FD2_dn_t = f_lambda_FD2_dn_t
     
-
-    #Incorporate both price acceptance and volume acceptance
-    # FD1_down_accept = FD1_down_accept_price.*FD1_down_percentage
-    # FD2_down_accept = FD2_down_accept_price.*FD2_down_percentage
-    # FD1_up_accept = FD1_up_accept_price.*FD1_up_percentage
-    # FD2_up_accept = FD2_up_accept_price.*FD2_up_percentage
-
-    #Incorporate only volume acceptance
-    FD1_down_accept = FD1_down_percentage
-    FD2_down_accept = FD2_down_percentage
-    FD1_up_accept = FD1_up_percentage
-    FD2_up_accept = FD2_up_percentage
-
-
     Data = Dict("T" => [i for i in 1:24],
                 "size_W1" => W1,
                 "size_W2" => W2,
