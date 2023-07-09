@@ -134,6 +134,8 @@ function Feature_Model(Data, Architecture)
 
             @constraint(Model_feature, Deg_slack_obj[h in H, d in D], C_Deg[h,d] == (p_all_dn[h,d] + p_all_up[h,d])/(2*SOC_max) * Cost_per_cycle ) # Constraint to set G_Bal
 
+            #
+
             ####################################################
             ############   Battery Constraints   ###############
             ####################################################

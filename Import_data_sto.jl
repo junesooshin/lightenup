@@ -135,7 +135,7 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
     #### Putting weights on it:
     if temporal == true
         @info("Temporal added in Stochastic")
-        temporal_relation = [0.8, 0.4, 0.3, 0.2, 0.1, 0.8]
+        temporal_relation = [0.1, 0.2, 0.3, 0.4, 0.8, 0.8]
         temporal_relation = temporal_relation / sum(temporal_relation)
 
     else

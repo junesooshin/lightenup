@@ -204,8 +204,10 @@ function construct_acceptance(FCRD_bid, vol_avg_price)
             if FCRD_bid[i,j] < vol_avg_price[i]
                 acceptance[i,j] = 1 #Always accepted if bid is below the volume weighted average
             elseif FCRD_bid[i,j] >= vol_avg_price[i]
-                percentage_excess = 1+(FCRD_bid[i,j]-vol_avg_price[i])/vol_avg_price[i]
-                acceptance[i,j] = rev_sigmoid(percentage_excess) #Use the reverse sigmoid function
+                diff = FCRD_bid[i,j]-vol_avg_price[i]
+                #percentage = (FCRD_bid[i,j]-vol_avg_price[i])/vol_avg_price[i]
+                acceptance[i,j] = rev_sigmoid(diff) #Use the reverse sigmoid function
+                println("h: ",i," d: ",j, " sample: ",  FCRD_bid[i,j], " forecast: ",vol_avg_price[i]," percentage: ",diff, " Acceptance: ", acceptance[i,j])
             end
         end
     end
@@ -215,12 +217,12 @@ end
 function rev_sigmoid(x)
     #Reverse sigmoid function for PaB acceptance
     # Define the parameters for the sigmoid function
-    a = 5
-    b = 1
-    c = 2
+    a = 0.1
+    b = 10
+    c = 1.9
     #reverse sigmoid function
     y = c / (1 + exp(-a*(x-b)))
-    y = 2 - y
+    y = (2 - y)/2
     return y
 end
 

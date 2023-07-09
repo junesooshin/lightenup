@@ -46,7 +46,7 @@ function run_det(processed_data, forecast_data, d_train_set, moving_day, test_da
     
     #Test deterministic model real-time
     data_real_det = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_det)
-    
+
     RT_results_det = RT_operation(data_real_det)
 
     result_det = Dict("Bid" => Bid_Results_det, "RT" => RT_results_det)
@@ -61,7 +61,7 @@ function run_oracle(processed_data, d_train_set, moving_day, test_day_2023)
     data_oracle = data_import_Oracle(processed_data, Data_index,test_day_2023)
     
     Bid_Results_oracle  = Deterministic_Model(data_oracle)
-    
+
     #Test deterministic model real-time
     data_real_oracle = data_import_real(processed_data, Data_index, test_day_2023, Bid_Results_oracle)
     
@@ -94,7 +94,6 @@ function run_feature(processed_data, forecast_data, Architecture, d_train_set, m
 
     Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
 
-    #Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up","FD_act_down","FD_act_up"]
     Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
     #Feature_Selection = ["Spot", "FD1_down", "FD2_down", "FD1_up", "FD2_up", "Spot^2", "Spot_FD1_down", "Spot_FD2_down", "Spot_FD1_up", "Spot_FD2_up", "FD1_down^2", "FD1_down_FD2_down", "FD1_down_FD1_up", "FD1_down_FD2_up", "FD2_down^2", "FD2_down_FD1_up", "FD2_down_FD2_up", "FD1_up^2", "FD1_up_FD2_up", "FD2_up^2"]
     
@@ -121,8 +120,8 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     Threshold_Max_coef = 0.9
     Threshold_Min_coef = 1.1 
 
-    processed_data = load_data("real")
-    #processed_data = load_data("features")
+    #processed_data = load_data("real")
+    processed_data = load_data("features")
 
     RT_profit = Dict()
     Exp_profit = Dict()
@@ -210,7 +209,7 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                         end
 
                         if issubset(["feature"],Models_range)  == true
-                            Architectures = ["GA"] # General or Hourly architecture of the coefficients
+                            Architectures = ["HA"] # General or Hourly architecture of the coefficients
                             for Architecture in Architectures
                                 
                                 result_feature = run_feature(processed_data, forecast_data, Architecture , d_train_set, moving_day,gamma, test_day_2023, scaling,Acceptance)
@@ -219,7 +218,7 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                                 if save_all == true
                                     save_dict(result_feature, "feature_$(id)")
                                 end 
-                            end    
+                            end
                         else
                             RT_feature_profit = 0
                             Exp_feature_profit = 0                
@@ -260,13 +259,15 @@ end
 
 #gamma_range = [0.8,0.83,0.85,0.87,0.9,0.93,0.95,0.97, 1.0,1.05,1.1]
 gamma_range = [0.85]
+#gamma_range = [1.00]
 
-#Models_range = ["feature"]
-Models_range = ["rule","det","oracle","sto","feature"]
+Models_range = ["feature"]
+#Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
 d_train_set_range = [5]
 #d_train_set_range = [2,5,10,20,40,80,160,320,365]
+#d_train_set_range = [160]
 #d_train_set_range = [2,4,5,7,9,11]
 
 #moving_day_range = 0   #(within range 0:87)
@@ -276,15 +277,17 @@ forecast_range = ["forecast_all1"]
 #forecast_range = ["forecast_all2"]
 #forecast_range = ["forecast_allfeature"]
 
-Acceptance = ""
+
 # Settings for different forecast and acceptance:
 #forecast_range = ["forecast_all0","forecast_all2"] # load_data("real")
 #forecast_range = ["forecast_all0_acc","forecast_all2_acc"] # load_data("real_acc")
 #forecast_range = ["forecast_all0_acc","forecast_all2_acc_perf"] # load_data("real_acc")
 
+Acceptance = "Junes" # "Junes" , "100" , "Volume"
+
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for Feature)
-save_all = false #true/false (for saving individual results)
+save_all = true #true/false (for saving individual results)
 
 RT_profit, Exp_profit = run_all(Models_range,d_train_set_range, moving_day_range,forecast_range,gamma_range, out_of_sample, scaling,Acceptance, save_all)
 
