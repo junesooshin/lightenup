@@ -37,7 +37,7 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     end
 
     X = reshape(Matrix(train_df[:,Feature_Selection]), (length(H), length(D_train), F))
-    X_train_f = reshape(Matrix(forecast_data_mod[N_train_flat,Feature_Selection]), (length(H), length(D_train), F))
+    
 
     n_features = size(X)[3]   # Number of features
     n_train_days = size(X)[2] # Total number of training days
@@ -50,6 +50,7 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
         forecast_df = forecast_data_mod
     end
     
+    X_train_f = reshape(Matrix(forecast_data_mod[N_train_flat,Feature_Selection]), (length(H), length(D_train), F))
     X_f = reshape(Matrix(forecast_df[N_forecast_flat, Feature_Selection]),(length(H),1,F))
     
 
@@ -146,7 +147,9 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
         D_train = collect(1:n_train_days)
 
         X_with_forecast = cat(X, X_f,dims=(2)) # Add the forecast to the training data
+        X_with_forecast_f = cat(X_train_f, X_f,dims=(2)) # Add the forecast to the training data
         X = X_with_forecast
+        X_train_f = X_with_forecast_f
 
         # Collect the sample data and the forecasted price
         lambda_DA = cat(lambda_DA, f_DA_t,dims=(2)) # Collect the spot
@@ -198,6 +201,7 @@ function data_import_Feature(Data_all, forecast_data, Data_index, gamma, Feature
     p_ch_max = Data_Battery["p_ch_max"]
     if scaling == true
         Cost_per_cycle = (Data_Battery["Cost_per_cycle"]- Min_train["Spot"])/(Max_train["Spot"]-Min_train["Spot"])
+        #Cost_per_cycle = (Data_Battery["Cost_per_cycle"]- Min_train)/(Max_train-Min_train)
     elseif scaling == false
         Cost_per_cycle = Data_Battery["Cost_per_cycle"]
     end
@@ -235,10 +239,15 @@ function min_max_scaler(df, dataset, training_Max_parameters,training_Min_parame
     if dataset == "train" 
 
         min_values = minimum.(eachcol(df))
+        #min_val = minimum(min_values)
         Min = Dict(zip(featurenames, min_values))
+        #Min = min_val
 
         max_values = maximum.(eachcol(df))
+        #max_val = maximum(max_values)
         Max = Dict(zip(featurenames, max_values))
+        #Max = max_val
+
         
     elseif dataset == "test" #Pass transformation from train data
 
@@ -250,6 +259,7 @@ function min_max_scaler(df, dataset, training_Max_parameters,training_Min_parame
 
     for feature in featurenames
         Scaled_features[:,feature] = (df[:,feature] .- Min[feature]) ./ (Max[feature]-Min[feature])
+        #Scaled_features[:,feature] = (df[:,feature] .- Min) ./ (Max-Min)
     end
     
     return Scaled_features, Min, Max

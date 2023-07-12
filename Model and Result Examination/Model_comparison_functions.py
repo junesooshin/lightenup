@@ -163,9 +163,9 @@ def plot_each_test_day_Profit(data,models,x_axis,drawstyle,save = False):
     
 
 def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Deterministic', 'Stochastic', 'Feature','Oracle'], x_axis_label = "Forecasts", x_axis_selection = [0,1,2], x_axis_tick_label = [1,2,3], 
-                     y_axis_label =  'Profit [\u20AC/day]', Selected_Profit = ['Expected', 'Realized'], 
-                     barwidth = 0.1, ylim = "",
-                     bbox_to_anchor=(1.02, 0.9),legends = ['Rule', 'Deterministic', 'Stochastic', 'Feature','Oracle','Expected','Realized'], 
+                     y_axis_label =  'Profit [\u20AC/day]', Selected_Profit = ['Anticipated', 'Realized'], 
+                     barwidth = 0.1, ylim = "", errorbar = True,
+                     bbox_to_anchor=(1.02, 0.9),legends = ['Rule', 'Deterministic', 'Stochastic', 'Feature','Oracle','Anticipated','Realized'], 
                      ShowEachTestDay = False, pdf_name = 'Profit_Bar_plot' ,save = False):
 
     # Sample data
@@ -178,7 +178,7 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
     # Default settings
     color = ['C3', 'C0', 'C2', 'C1']  # Colors for the fourth dimension
     Model = ['Rule', 'Deterministic', 'Stochastic', 'Feature']
-    Profit_labels = ['Expected', 'Realized']  # Fill patterns for the fifth dimension
+    Profit_labels = ['Anticipated', 'Realized']  # Fill patterns for the fifth dimension
     Profit_patterns = ['', '\\']  # Fill patterns for the fifth dimension
     # /   - diagonal hatching
     # \   - back diagonal
@@ -303,7 +303,8 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
                 ax.bar(bar_left, bar_height, width=barwidth, color=color, hatch=fill_pattern, align='edge', edgecolor=edgecolor)
 
                 x_position = bar_left + barwidth/2
-                ax.errorbar(x_position, bar_height, yerr=error_value, fmt='none', ecolor='black', capsize=4)
+                if errorbar == True:
+                    ax.errorbar(x_position, bar_height, yerr=error_value, fmt='none', ecolor='black', capsize=4)
 
                 if ShowEachTestDay == True:
                     for d,val in enumerate(test_days):
@@ -347,10 +348,10 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
     legend_handles = []
 
     for label, color in zip(legend_labels, legend_colors):
-        if label in legends:
-            rect = plt.Rectangle((0, 0), 1, 1, color=color, label=label)
-            rect.set_edgecolor(edgecolor)
-            legend_handles.append(rect)
+        #if label in legends:
+        rect = plt.Rectangle((0, 0), 1, 1, color=color, label=label)
+        rect.set_edgecolor(edgecolor)
+        legend_handles.append(rect)
 
 
 
@@ -375,62 +376,79 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
 
 
 
-def Collect_bid_results(current_directory,Add_on_path,forecast_idx,SampleSize_idx,Acceptance_idx):
+def Collect_bid_results(current_directory,Add_on_paths,forecast_idx,SampleSize_idxs,models=["Rule","Det","Sto","Feature","Oracle"]):
     
-    #forecast_idx = 1
-    #SampleSize_idx = 5
-    #acceptance_criteria_factor_range = ["1.00","1.05","1.1","1.2"]
+    # Add_on_paths list
+
     acceptance_count = ["acceptance_FD2_down","acceptance_FD2_up","acceptance_FD1_down","acceptance_FD1_up"]
     bid_quantities   = ["b_FD2_dn","b_FD2_up","b_DA_dn","b_DA_up","b_FD1_dn","b_FD1_up"]
-    models = ["Rule","Det","Sto","Feature","Oracle"]
-    Array_Acceptance = np.empty((len(acceptance_count),24, 88, 5,len(Acceptance_idx)))
-    Array_Bid = np.empty((len(bid_quantities),24, 88, 5))
+    #models = ["Rule","Det","Sto","Feature","Oracle"]
+    Array_Acceptance = np.zeros((len(acceptance_count),24, 88, 5,len(Add_on_paths)))
+    Array_Bid = np.zeros((len(bid_quantities),24, 88, 5,len(Add_on_paths)))
+    Array_Comp = np.zeros((1, 88, 5,len(Add_on_paths)))
+    Model = ["Rule","Det","Sto","Feature","Oracle"]
+    model_idx = [i for i, m in enumerate(Model) if m in models]
+    models = [Model[i] for i, m in enumerate(Model) if m in models]
     
-    for ac,acc in enumerate(Acceptance_idx):
-        if len(Acceptance_idx) > 1:
-            ids = [f'acc_{acc}_f{forecast_idx}_d{SampleSize_idx}_upd{d}_t{d+1}' for d in range(0,88)]
-        else:
-            ids = [f'f{forecast_idx}_d{SampleSize_idx}_upd{d}_t{d+1}' for d in range(0,88)]
+    for path,Add_on_path in enumerate(Add_on_paths):
+        #for s,SampleSize_idx in enumerate(SampleSize_idxs):
+
+        ids = [f'f{forecast_idx}_d{SampleSize_idxs[path]}_upd{d}_t{d+1}' for d in range(0,88)]
 
 
 
         # Load each id at a time
         for d,id in enumerate(ids):
-            results = import_test_case(current_directory, Add_on_path, id)
+            results = import_test_case(current_directory, Add_on_path, id,models=models)
+            #print(results)
             #print("Import ", id)
 
 
             # Gather all the information:
             for m,model in enumerate(models):
-                # Acceptance
-                for a,acc in enumerate(acceptance_count):
-                    #print(results[model]['RT'][acc])
-                    Array_Acceptance[a,:,d,m,ac] = results[model]['RT'][acc]
 
+                m_idx = model_idx[m]
                 # Bid quantity
                 for b,bid in enumerate(bid_quantities):
-                    #print(results[model]['Bid'][bid])
-                    Array_Bid[b,:,d,m] = results[model]['Bid'][bid]
+                    # print(results[model]['Bid'][bid])
+                    #print(Array_Bid[b,:,d,m,s,path])
+                    
+                    Array_Bid[b,:,d,m_idx,path] = results[model]['Bid'][bid]
+
+                # Computation time
+                #print(results[model]['Bid']["time"])
+                if model == "Sto" or model == "Det" or model == "Feature":
+                    Array_Comp[0,:,m_idx,path] = results[model]['Bid']["time"]
+                else:
+                    Array_Comp[0,:,m_idx,path] = 0
     
-    return Array_Acceptance, Array_Bid
+    return Array_Acceptance, Array_Bid,Array_Comp
 
 
 
-def Plot_average_bid_quantities(Array_Acceptance,Array_Bid):
-    Acceptance_mean = np.mean(Array_Acceptance, axis=2)
-    Acceptance_std = np.std(Array_Acceptance, axis=2)
+
+def Plot_average_bid_quantities(Array_Bid,MultipleModels=True,Selected_models = ["Rule", "Deterministic", "Stochastic", "Feature", "Oracle"],Names = [""] ,linestyle = ["-"]):
+    #  Array_Bid = np.empty((len(bid_quantities),24, 88, len(models),len(Add_on_paths)))
     Bid_mean = np.mean(Array_Bid, axis=2)
     Bid_std = np.std(Array_Bid, axis=2)
-
+    #  Array_Bid = np.empty((len(bid_quantities),24, len(models),len(Add_on_paths))) 
+    print(np.shape(Bid_mean))
     x = np.arange(1, 25)
+
+
 
     # Determine the number of subplots based on b iterations
     bid_quantities = ["b_FD2_dn", "b_FD2_up", "b_DA_dn", "b_DA_up", "b_FD1_dn", "b_FD1_up"]
     bid_quantities_label = ["$FD2\\downarrow$", "$FD2\\uparrow$", "$DA\\downarrow$", "$DA\\uparrow$", "$FD1\\downarrow$", "$FD1\\uparrow$"]
+    Model = ["Rule", "Deterministic", "Stochastic", "Feature", "Oracle"]
+    modelname = ["R", "D", "S", "F", "O"]
+    models = [Model[i] for i, m in enumerate(Selected_models) if m in Model]
+    #print(models)
+    color = [ 'C3' , 'C0', 'C2', 'C1','C4']
+    colors = [color[i] for i, m in enumerate(Selected_models) if m in Model]
 
-    models = ["Rule", "Deterministic", "Stochastic", "Feature", "Oracle"]
-    model_colors = ['C3','C0', 'C2', 'C1','C4']
-    linestyles = ['-','-','-','-','--']
+    
+    
     num_subplots = len(bid_quantities)
 
     # Create subplots
@@ -441,8 +459,26 @@ def Plot_average_bid_quantities(Array_Acceptance,Array_Bid):
         row = b // 2  # Determine the row index
         col = b % 2  # Determine the column index
 
-        for m, model in enumerate(models):
-            axs[row, col].plot(x, Bid_mean[b, :, m], label=model,color=model_colors[m], linestyle = linestyles[m],linewidth=2.5)
+        
+        for n, labelname in enumerate(Names):
+            #print(Bid_mean[b, :, m,0,n])
+            if labelname != "Perfect Acceptance":
+                if MultipleModels == True: # If multiple models then it accounts what you put in Names with the models
+                    model_idx = [i for i, m in enumerate(Model) if m in Selected_models]
+                    #print(model_idx)
+                    for m, model in enumerate(model_idx):
+                        axs[row, col].plot(x, Bid_mean[b, :, model,n], label=labelname+ " "+ modelname[model],color=color[model], linestyle = linestyle[n],linewidth=2.5)
+                else:
+                    model_idx = [i for i, m in enumerate(Model) if m in Selected_models]
+                    #print(np.shape(Bid_mean[b, :, model_idx[0],0,n]))
+                    #print(np.shape(x))
+                    #print(labelname)
+                    #print(model_idx[0])
+                    #print(colors[n])
+
+                    axs[row, col].plot(x, Bid_mean[b, :, model_idx[0],n], label=labelname,color=colors[n], linestyle = linestyle[n],linewidth=2.5)
+            else:
+                axs[row, col].plot(x, Bid_mean[b, :, 1,n], label="y"+ " D",color=color[1], linestyle = "-",linewidth=2.5)
             # axs[row, col].scatter(x, Acceptance_mean[1, :, m], label=model)  # Uncomment if needed
 
         axs[row, col].set_title(bid_quantities_label[b], fontsize=16)  # Set subplot title
@@ -714,18 +750,7 @@ def plot_Profit_Test_For_SampleSize(Array, xtick_names,Forecast_index, marker_si
     plt.show()
 
 
-def import_test_case(current_directory, Add_on_path, choose_id):
-    #Import JSON files
-    with open(current_directory + Add_on_path + f'/oracle_{choose_id}.json') as results_oracle_json:
-        Results_oracle = json.load(results_oracle_json)
-    with open(current_directory + Add_on_path + f'/det_{choose_id}.json') as results_det_json:
-        Results_det = json.load(results_det_json)
-    with open(current_directory + Add_on_path + f'/feature_{choose_id}.json') as results_feature_json:
-        Results_feature = json.load(results_feature_json)
-    with open(current_directory + Add_on_path + f'/sto_{choose_id}.json') as results_sto_json:
-        Results_sto = json.load(results_sto_json)
-    with open(current_directory + Add_on_path + f'/rule_{choose_id}.json') as results_rule_json:
-        Results_rule = json.load(results_rule_json)
+def import_test_case(current_directory, Add_on_path, choose_id,models = ["Rule","Det","Sto","Feature","Oracle"]):
 
     #Convert results in to np.arrays
     oracle_bid = {}
@@ -739,30 +764,52 @@ def import_test_case(current_directory, Add_on_path, choose_id):
     rule_bid = {}
     rule_RT = {}
 
-    for key, value in Results_oracle['Bid'].items():
-        oracle_bid[key] = np.array(value)
-    for key, value in Results_oracle['RT'].items():
-        oracle_RT[key] = np.array(value)
+    #Import JSON files
+    if "Oracle" in models:
+        with open(current_directory + Add_on_path + f'/oracle_{choose_id}.json') as results_oracle_json:
+            Results_oracle = json.load(results_oracle_json)
 
-    for key, value in Results_det['Bid'].items():
-        det_bid[key] = np.array(value)
-    for key, value in Results_det['RT'].items():
-        det_RT[key] = np.array(value)
+            for key, value in Results_oracle['Bid'].items():
+                oracle_bid[key] = np.array(value)
+            for key, value in Results_oracle['RT'].items():
+                oracle_RT[key] = np.array(value)
 
-    for key, value in Results_feature['Bid'].items():
-        feature_bid[key] = np.array(value)
-    for key, value in Results_feature['RT'].items():
-        feature_RT[key] = np.array(value)
+    if "Det" in models:
+        with open(current_directory + Add_on_path + f'/det_{choose_id}.json') as results_det_json:
+            Results_det = json.load(results_det_json)
 
-    for key, value in Results_sto['Bid'].items():
-        sto_bid[key] = np.array(value)
-    for key, value in Results_sto['RT'].items():
-        sto_RT[key] = np.array(value)
+            for key, value in Results_det['Bid'].items():
+                det_bid[key] = np.array(value)
+            for key, value in Results_det['RT'].items():
+                det_RT[key] = np.array(value)
 
-    for key, value in Results_rule['Bid'].items():
-        rule_bid[key] = np.array(value)
-    for key, value in Results_rule['RT'].items():
-        rule_RT[key] = np.array(value)
+    if "Feature" in models:
+        with open(current_directory + Add_on_path + f'/feature_{choose_id}.json') as results_feature_json:
+            Results_feature = json.load(results_feature_json)
+
+            for key, value in Results_feature['Bid'].items():
+                feature_bid[key] = np.array(value)
+            for key, value in Results_feature['RT'].items():
+                feature_RT[key] = np.array(value)
+
+    if "Sto" in models:
+        with open(current_directory + Add_on_path + f'/sto_{choose_id}.json') as results_sto_json:
+            Results_sto = json.load(results_sto_json)
+
+            for key, value in Results_sto['Bid'].items():
+                sto_bid[key] = np.array(value)
+            for key, value in Results_sto['RT'].items():
+                sto_RT[key] = np.array(value)
+
+    if "Rule" in models:
+        with open(current_directory + Add_on_path + f'/rule_{choose_id}.json') as results_rule_json:
+            Results_rule = json.load(results_rule_json)
+
+            for key, value in Results_rule['Bid'].items():
+                rule_bid[key] = np.array(value)
+            for key, value in Results_rule['RT'].items():
+                rule_RT[key] = np.array(value)
+
 
     results = {'Oracle': {'Bid': oracle_bid, 'RT': oracle_RT},
                'Det': {'Bid':det_bid, 'RT':det_RT}, 

@@ -89,7 +89,7 @@ function run_sto(processed_data, forecast_data, d_train_set, moving_day,gamma, s
     return result_sto
 end
 
-function run_feature(processed_data, forecast_data, Architecture, d_train_set, moving_day,gamma, test_day_2023, scaling,Acceptance)
+function run_feature(processed_data, forecast_data, Architecture, d_train_set, moving_day,gamma, test_day_2023, scaling,Acceptance,ForecastCorrection_hyperparameter)
     #Feature Model
 
     Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
@@ -99,7 +99,7 @@ function run_feature(processed_data, forecast_data, Architecture, d_train_set, m
     
     data_feature = data_import_Feature(processed_data, forecast_data, Data_index,gamma, Feature_Selection, scaling,false,Acceptance,"With forecast in input")
 
-    feature_solution = Feature_Model(data_feature, Architecture)
+    feature_solution = Feature_Model(data_feature, Architecture,ForecastCorrection_hyperparameter)
     
     Bid_Results_feature = Create_bid_Feature(data_feature, feature_solution, Architecture)
 
@@ -120,8 +120,8 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     Threshold_Max_coef = 0.9
     Threshold_Min_coef = 1.1 
 
-    #processed_data = load_data("real")
-    processed_data = load_data("features")
+    processed_data = load_data("real")
+    #processed_data = load_data("features")
 
     RT_profit = Dict()
     Exp_profit = Dict()
@@ -209,10 +209,10 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                         end
 
                         if issubset(["feature"],Models_range)  == true
-                            Architectures = ["HA"] # General or Hourly architecture of the coefficients
+                            Architectures = ["GA"] # General or Hourly architecture of the coefficients
                             for Architecture in Architectures
                                 
-                                result_feature = run_feature(processed_data, forecast_data, Architecture , d_train_set, moving_day,gamma, test_day_2023, scaling,Acceptance)
+                                result_feature = run_feature(processed_data, forecast_data, Architecture , d_train_set, moving_day,gamma, test_day_2023, scaling,Acceptance,ForecastCorrection_hyperparameter)
                                 RT_feature_profit = result_feature["RT"]["profit"]
                                 Exp_feature_profit = sum(result_feature["Bid"]["obj_t"])
                                 if save_all == true
@@ -261,19 +261,22 @@ end
 gamma_range = [0.85]
 #gamma_range = [1.00]
 
-Models_range = ["feature"]
+Models_range = ["sto"]
 #Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
-d_train_set_range = [5]
+#d_train_set_range = [80]
 #d_train_set_range = [2,5,10,20,40,80,160,320,365]
-#d_train_set_range = [160]
-#d_train_set_range = [2,4,5,7,9,11]
+d_train_set_range = [5]
+#d_train_set_range = [3,5,8,10,12]
+
 
 #moving_day_range = 0   #(within range 0:87)
 moving_day_range = 0:87 #(within range 0:87)
 
 forecast_range = ["forecast_all1"]
+#forecast_range = ["forecast_all1_acc_perf"]
+
 #forecast_range = ["forecast_all2"]
 #forecast_range = ["forecast_allfeature"]
 
@@ -281,10 +284,10 @@ forecast_range = ["forecast_all1"]
 # Settings for different forecast and acceptance:
 #forecast_range = ["forecast_all0","forecast_all2"] # load_data("real")
 #forecast_range = ["forecast_all0_acc","forecast_all2_acc"] # load_data("real_acc")
-#forecast_range = ["forecast_all0_acc","forecast_all2_acc_perf"] # load_data("real_acc")
+#forecast_range = ["forecast_all0","forecast_all1_acc_perf"] # load_data("real_acc")
 
-Acceptance = "Junes" # "Junes" , "100" , "Volume"
-
+Acceptance = "Volume" # "Junes" , "100" , "Volume"
+ForecastCorrection_hyperparameter = false # false , 1 
 out_of_sample = false #true/false (if true, moving day cannot be more than 86) !FIX m_set_range and moving_day when running out-of-sample!
 scaling = true #true/false (for Feature)
 save_all = true #true/false (for saving individual results)

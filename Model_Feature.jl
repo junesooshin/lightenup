@@ -1,5 +1,5 @@
 
-function Feature_Model(Data, Architecture)
+function Feature_Model(Data, Architecture,ForecastCorrection_hyperparameter=false)
 
     #
     # Data: All the data required for running the 
@@ -47,6 +47,8 @@ function Feature_Model(Data, Architecture)
     lambda_FD1_up = Data["lambda_FD1_up"] # X[:,:,"FD1_up"]
     lambda_FD1_dn = Data["lambda_FD1_dn"] #  X[:,:,"FD1_down"]
 
+
+    
     #### THIS WE CAN KNOW WITH HISTORICAL DATA
     a_up_t   = Data["a_up_t"] # 
     a_dn_t   = Data["a_dn_t"] # 
@@ -106,35 +108,69 @@ function Feature_Model(Data, Architecture)
             @variable(Model_feature , b_DA_dn[H,D] >= 0)               # Provided Bid Downregulation/Charging in Day-ahead 
             @variable(Model_feature , b_FD1_up[H,D] >= 0)              # Provided Bid FCR-D D-2 Upregulation/Discharging
             @variable(Model_feature , b_FD1_dn[H,D] >= 0)              # Provided Bid FCR-D D-2 Downregulation/Charging
+
+            # Helper forecast bids
+            @variable(Model_feature , b_FD2_up_f[H,D] >= 0)              # Provided Bid FCR-D D-2 Upregulation/Discharging
+            @variable(Model_feature , b_FD2_dn_f[H,D] >= 0)              # Provided Bid FCR-D D-2 Downregulation/Charging
+            @variable(Model_feature , b_DA_up_f[H,D] >= 0)               # Provided Bid Upregulation/Discharging in Day-ahead 
+            @variable(Model_feature , b_DA_dn_f[H,D] >= 0)               # Provided Bid Downregulation/Charging in Day-ahead 
+            @variable(Model_feature , b_FD1_up_f[H,D] >= 0)              # Provided Bid FCR-D D-1 Upregulation/Discharging
+            @variable(Model_feature , b_FD1_dn_f[H,D] >= 0)              # Provided Bid FCR-D D-1 Downregulation/Charging
+
+            @variable(Model_feature , FD1_up_diff[H,D])               # Provided Bid FCR-D D-2 Upregulation/Discharging
+            @variable(Model_feature , FD1_dn_diff[H,D])               # Provided Bid FCR-D D-2 Downregulation/Charging
+            @variable(Model_feature , FD2_up_diff[H,D])               # Provided Bid Upregulation/Discharging in Day-ahead 
+            @variable(Model_feature , FD2_dn_diff[H,D])               # Provided Bid Downregulation/Charging in Day-ahead 
+            @variable(Model_feature , DA_up_diff[H,D])                # Provided Bid FCR-D D-1 Upregulation/Discharging
+            @variable(Model_feature , DA_dn_diff[H,D])                # Provided Bid FCR-D D-1 Downregulation/Charging
+
             
             @variable(Model_feature , G_FD1[H,D])                       # Gain/Profit from FCR-D
             @variable(Model_feature , G_FD2[H,D])                       # Gain/Profit from FCR-D
             @variable(Model_feature , G_DA[H,D])                       # Gain/Profit from Day-ahead
             @variable(Model_feature , C_Deg[H,D])                      # Cost from degradation
+            @variable(Model_feature , C_Forecast[H,D])                 # Cost from forecast
 
-
+             
             ###################################################
             #                     NOTE                        #
-
+             
             # All variables and parameters will be indexed: [h,d]
-
+             
             #                                                 #
             ###################################################
 
             ####################################################
             ############        Objective        ###############
             ####################################################
-
-            @objective(Model_feature, Max, sum((G_FD1[h,d] + G_FD2[h,d] + G_DA[h,d] - C_Deg[h,d]) for h in H, d in D))
-
+             
+            if ForecastCorrection_hyperparameter == false
+                @objective(Model_feature, Max, sum((G_FD1[h,d] + G_FD2[h,d] + G_DA[h,d] - C_Deg[h,d]) for h in H, d in D))
+            else
+                #@constraint(Model_feature, Forecast_slack_obj[h in H, d in D], C_Forecast[h,d] == FD1_up_diff[h,d] + FD1_dn_diff[h,d] + FD2_up_diff[h,d] + FD2_dn_diff[h,d] + DA_up_diff[h,d] + DA_dn_diff[h,d]) # Constraint to set G_Bal
+                @constraint(Model_feature, Forecast_slack_obj[h in H, d in D], C_Forecast[h,d] == FD1_up_diff[h,d] + FD1_dn_diff[h,d] + FD2_up_diff[h,d] + FD2_dn_diff[h,d]) # Constraint to set G_Bal
+               
+                @objective(Model_feature, Max, sum((G_FD1[h,d] + G_FD2[h,d] + G_DA[h,d] - C_Deg[h,d] - ForecastCorrection_hyperparameter*C_Forecast[h,d]) for h in H, d in D))
+            end
+            # 
             @constraint(Model_feature, FD1_slack_obj[h in H, d in D], G_FD1[h,d] == lambda_FD1_up[ h,d ]*p_FD1_up[h,d] + lambda_FD1_dn[ h,d ]*p_FD1_dn[h,d]) # Constraint to set G_FD
+            #@constraint(Model_feature, FD1_slack_obj[h in H, d in D], G_FD1[h,d] ==  lambda_FD1_dn[ h,d ]*p_FD1_dn[h,d]) # Constraint to set G_FD
+            
             @constraint(Model_feature, FD2_slack_obj[h in H, d in D], G_FD2[h,d] == lambda_FD2_up[ h,d ]*p_FD2_up[h,d] + lambda_FD2_dn[ h,d ]*p_FD2_dn[h,d]) # Constraint to set G_FD
+            #@constraint(Model_feature, FD2_slack_obj[h in H, d in D], G_FD2[h,d] ==  lambda_FD2_dn[ h,d ]*p_FD2_dn[h,d]) # Constraint to set G_FD
+
 
             @constraint(Model_feature, DA_slack_obj[h in H, d in D], G_DA[h,d] == lambda_DA[ h,d ]*(p_DA_up[h,d]-p_DA_dn[h,d])) # Constraint to set G_DA
 
             @constraint(Model_feature, Deg_slack_obj[h in H, d in D], C_Deg[h,d] == (p_all_dn[h,d] + p_all_up[h,d])/(2*SOC_max) * Cost_per_cycle ) # Constraint to set G_Bal
 
-            #
+            # Forecast difference constraints
+            @constraint(Model_feature, FD1_up_diff_con[h in H, d in D], FD1_up_diff[h,d] == lambda_FD1_up[ h,d ]*b_FD1_up_f[h,d] - lambda_FD1_up[ h,d ]*b_FD1_up[h,d]) 
+            @constraint(Model_feature, FD1_dn_diff_con[h in H, d in D], FD1_dn_diff[h,d] == lambda_FD1_dn[ h,d ]*b_FD1_dn_f[h,d] - lambda_FD1_dn[ h,d ]*b_FD1_dn[h,d]) 
+            @constraint(Model_feature, FD2_up_diff_con[h in H, d in D], FD2_up_diff[h,d] == lambda_FD2_up[ h,d ]*b_FD2_up_f[h,d] - lambda_FD2_up[ h,d ]*b_FD2_up[h,d]) 
+            @constraint(Model_feature, FD2_dn_diff_con[h in H, d in D], FD2_dn_diff[h,d] == lambda_FD2_dn[ h,d ]*b_FD2_dn_f[h,d] - lambda_FD2_dn[ h,d ]*b_FD2_dn[h,d]) 
+            @constraint(Model_feature, DA_up_diff_con[h in H, d in D],  DA_up_diff[h,d] == lambda_DA[ h,d ]*b_DA_up_f[h,d] - lambda_DA[ h,d ]*b_DA_up[h,d]) 
+            @constraint(Model_feature, DA_dn_diff_con[h in H, d in D],  DA_dn_diff[h,d] == lambda_DA[ h,d ]*b_DA_dn_f[h,d] - lambda_DA[ h,d ]*b_DA_dn[h,d]) 
 
             ####################################################
             ############   Battery Constraints   ###############
@@ -181,6 +217,15 @@ function Feature_Model(Data, Architecture)
                 @constraint(Model_feature, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[1,F+1])
                 @constraint(Model_feature, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[1,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[1,F+1])
 
+                # Historic forecast bids
+                @constraint(Model_feature, FD2_Coef_con_up_hist[h in H, d in D], b_FD2_up_f[h,d] == sum(q_FD2_up[1,f] * X_train_f[ h,d, f] for f in 1:F) + q_FD2_up[1,F+1])
+                @constraint(Model_feature, FD2_Coef_con_dn_hist[h in H, d in D], b_FD2_dn_f[h,d] == sum(q_FD2_dn[1,f] * X_train_f[ h,d, f] for f in 1:F) + q_FD2_dn[1,F+1])
+                @constraint(Model_feature, DA_Coef_con_up_hist[h in H,  d in D], b_DA_up_f[h,d] == sum(q_DA_up[1,f] * X_train_f[ h,d, f] for f in 1:F) + q_DA_up[1,F+1])
+                @constraint(Model_feature, DA_Coef_con_dn_hist[h in H,  d in D], b_DA_dn_f[h,d] == sum(q_DA_dn[1,f] * X_train_f[ h,d, f] for f in 1:F) + q_DA_dn[1,F+1])
+                @constraint(Model_feature, FD1_Coef_con_up_hist[h in H,  d in D], b_FD1_up_f[h,d] == sum(q_FD1_up[1,f] * X_train_f[ h,d, f] for f in 1:F) + q_FD1_up[1,F+1])
+                @constraint(Model_feature, FD1_Coef_con_dn_hist[h in H,  d in D], b_FD1_dn_f[h,d] == sum(q_FD1_dn[1,f] * X_train_f[ h,d, f] for f in 1:F) + q_FD1_dn[1,F+1])
+
+
             elseif Architecture == "HA"
                 @constraint(Model_feature, FD2_Coef_con_up[h in H, d in D], b_FD2_up[h,d] == sum(q_FD2_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_up[h,F+1])
                 @constraint(Model_feature, FD2_Coef_con_dn[h in H, d in D], b_FD2_dn[h,d] == sum(q_FD2_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD2_dn[h,F+1])
@@ -188,6 +233,15 @@ function Feature_Model(Data, Architecture)
                 @constraint(Model_feature, DA_Coef_con_dn[h in H,  d in D], b_DA_dn[h,d] == sum(q_DA_dn[h,f] * X[ h,d, f] for f in 1:F) + q_DA_dn[h,F+1])
                 @constraint(Model_feature, FD1_Coef_con_up[h in H,  d in D], b_FD1_up[h,d] == sum(q_FD1_up[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_up[h,F+1])
                 @constraint(Model_feature, FD1_Coef_con_dn[h in H,  d in D], b_FD1_dn[h,d] == sum(q_FD1_dn[h,f] * X[ h,d, f] for f in 1:F) + q_FD1_dn[h,F+1])
+
+                # Historic forecast bids
+                @constraint(Model_feature, FD2_Coef_con_up_hist[h in H, d in D], b_FD2_up_f[h,d] == sum(q_FD2_up[h,f] * X_train_f[ h,d, f] for f in 1:F) + q_FD2_up[h,F+1])
+                @constraint(Model_feature, FD2_Coef_con_dn_hist[h in H, d in D], b_FD2_dn_f[h,d] == sum(q_FD2_dn[h,f] * X_train_f[ h,d, f] for f in 1:F) + q_FD2_dn[h,F+1])
+                @constraint(Model_feature, DA_Coef_con_up_hist[h in H,  d in D], b_DA_up_f[h,d] == sum(q_DA_up[h,f] * X_train_f[ h,d, f] for f in 1:F) + q_DA_up[h,F+1])
+                @constraint(Model_feature, DA_Coef_con_dn_hist[h in H,  d in D], b_DA_dn_f[h,d] == sum(q_DA_dn[h,f] * X_train_f[ h,d, f] for f in 1:F) + q_DA_dn[h,F+1])
+                @constraint(Model_feature, FD1_Coef_con_up_hist[h in H,  d in D], b_FD1_up_f[h,d] == sum(q_FD1_up[h,f] * X_train_f[ h,d, f] for f in 1:F) + q_FD1_up[h,F+1])
+                @constraint(Model_feature, FD1_Coef_con_dn_hist[h in H,  d in D], b_FD1_dn_f[h,d] == sum(q_FD1_dn[h,f] * X_train_f[ h,d, f] for f in 1:F) + q_FD1_dn[h,F+1])
+
             end
 
 
@@ -343,3 +397,35 @@ function Create_bid_Feature(Data, Results_from_training,Architecture)
     @info("New feature solution saved!")
     return Bid_Results
 end
+
+#=
+#Default parameters for 'run_all' function
+d_train_set = 5
+
+moving_day = 0   #(within range 0:87)
+#moving_day_range = 0:87 #(within range 0:87)
+
+
+
+Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
+
+Feature_Selection = ["Spot", "FD1_down","FD2_down","FD1_up","FD2_up"]
+#Feature_Selection = ["Spot", "FD1_down", "FD2_down", "FD1_up", "FD2_up", "Spot^2", "Spot_FD1_down", "Spot_FD2_down", "Spot_FD1_up", "Spot_FD2_up", "FD1_down^2", "FD1_down_FD2_down", "FD1_down_FD1_up", "FD1_down_FD2_up", "FD2_down^2", "FD2_down_FD1_up", "FD2_down_FD2_up", "FD1_up^2", "FD1_up_FD2_up", "FD2_up^2"]
+
+processed_data = load_data("features")
+forecast = "forecast_all1"
+
+Acceptance = "Volume" # "Junes" , "100" , "Volume"
+gamma = 0.85
+scaling = true #true/false (for Feature)
+
+forecast_data = load_data(forecast) # Loop over different forecast accuracies
+Architecture = "GA"
+
+Data = data_import_Feature(processed_data, forecast_data, Data_index,gamma, Feature_Selection, scaling,false,Acceptance,"With forecast in input")
+
+feature_solution = Feature_Model(data_feature, Architecture)
+
+
+Feature_Model(Data, Architecture)
+=#

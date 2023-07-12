@@ -70,17 +70,14 @@ function stochastic_model(Data)
 
             @objective(m_sto, Max, sum(G_FD2[t] + G_DA[t] + G_FD1[t] - C_Deg[t] for t in T) )
 
-            @constraint(m_sto, Gain_FD2[t in T], G_FD2[t] == sum(pi1[w1]*(f_FD2_up_tw[t,w1]*p_FD2_up[t,w1]
-                                                    + f_FD2_dn_tw[t,w1]*p_FD2_dn[t,w1]) 
-                                                    for w1 in W1))
+            @constraint(m_sto, Gain_FD2[t in T], G_FD2[t] == sum(pi1[w1]*(f_FD2_up_tw[t,w1]*p_FD2_up[t,w1] + f_FD2_dn_tw[t,w1]*p_FD2_dn[t,w1])  for w1 in W1))
+            #@constraint(m_sto, Gain_FD2[t in T], G_FD2[t] == sum(pi1[w1]*( f_FD2_dn_tw[t,w1]*p_FD2_dn[t,w1])  for w1 in W1))
 
-            @constraint(m_sto, Gain_DA[t in T], G_DA[t] == sum(pi2[w1,w2]*(f_DA_tw[t,w1,w2]
-                                                            *(p_DA_up[t,w1]-p_DA_dn[t,w1])) 
-                                                            for w1 in W1, w2 in W2)) 
+            @constraint(m_sto, Gain_DA[t in T], G_DA[t] == sum(pi2[w1,w2]*(f_DA_tw[t,w1,w2]*(p_DA_up[t,w1]-p_DA_dn[t,w1])) for w1 in W1, w2 in W2)) 
 
-            @constraint(m_sto, Gain_FD1[t in T], G_FD1[t] == sum(pi3[w1,w2,w3]*(f_FD1_up_tw[t,w1,w2,w3]*p_FD1_up[t,w1,w2,w3]  
-                                                                    + f_FD1_dn_tw[t,w1,w2,w3]*p_FD1_dn[t,w1,w2,w3]) 
-                                                                    for w1 in W1, w2 in W2, w3 in W3)) 
+            @constraint(m_sto, Gain_FD1[t in T], G_FD1[t] == sum(pi3[w1,w2,w3]*(f_FD1_up_tw[t,w1,w2,w3]*p_FD1_up[t,w1,w2,w3]   + f_FD1_dn_tw[t,w1,w2,w3]*p_FD1_dn[t,w1,w2,w3]) for w1 in W1, w2 in W2, w3 in W3)) 
+            #@constraint(m_sto, Gain_FD1[t in T], G_FD1[t] == sum(pi3[w1,w2,w3]*( f_FD1_dn_tw[t,w1,w2,w3]*p_FD1_dn[t,w1,w2,w3]) for w1 in W1, w2 in W2, w3 in W3)) 
+
 
             @constraint(m_sto, Deg[t in T], C_Deg[t] == sum(pi3[w1,w2,w3]*(p_all_dn[t,w1,w2,w3] + p_all_up[t,w1,w2,w3]) for w1 in W1, w2 in W2, w3 in W3)/(2*SOC_max) * Cost_per_cycle) # Constraint to set G_Bal
 
@@ -96,8 +93,8 @@ function stochastic_model(Data)
             @constraint(m_sto, SOC_cap_con[t in T, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] >= (p_DA_up[t,w1] + b_FD1_up[t,w1,w2] + b_FD2_up[t]) ) # To ensure that enough energy in battery for upregulation/discharging. The SOC need to be bigger or equal to all the bids combined for that hour
             @constraint(m_sto, SOC_cap_con2[t in T, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] <= SOC_max - (p_DA_dn[t,w1] + b_FD1_dn[t,w1,w2] + b_FD2_dn[t]) ) # To ensure that enough energy can be downregulated/charged to the battery. The SOC need to be smaller or equal to the max SOC minus all the downregulated bids combined for that hour
 
-            @constraint(m_sto, Charging_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_DA_dn[t,w1] + b_FD1_dn[t,w1,w2] + b_FD2_dn[t] <= p_ch_max ) # Constraint State of charge
-            @constraint(m_sto, Discharging_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_DA_up[t,w1] + b_FD1_up[t,w1,w2] + b_FD2_up[t] <= p_dis_max ) # Constraint State of charge
+            @constraint(m_sto, Charging_con[t in T, w1 in W1, w2 in W2], p_DA_dn[t,w1] + b_FD1_dn[t,w1,w2] + b_FD2_dn[t] <= p_ch_max ) # Constraint State of charge
+            @constraint(m_sto, Discharging_con[t in T, w1 in W1, w2 in W2], p_DA_up[t,w1] + b_FD1_up[t,w1,w2] + b_FD2_up[t] <= p_dis_max ) # Constraint State of charge
 
             @constraint(m_sto, FD1_up_acc_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_FD1_up[t,w1,w2,w3] == f_FD1_y_up_tw[t,w1,w2,w3]*b_FD1_up[t,w1,w2] ) # The true power after corrected for acceptance of the bid
             @constraint(m_sto, FD2_up_acc_con[t in T, w1 in W1], p_FD2_up[t,w1] == f_FD2_y_up_tw[t,w1]*b_FD2_up[t] ) # The true power after corrected for acceptance of the bid
