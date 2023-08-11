@@ -376,15 +376,16 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
 
 
 
-def Collect_bid_results(current_directory,Add_on_paths,forecast_idx,SampleSize_idxs,models=["Rule","Det","Sto","Feature","Oracle"]):
+def Collect_bid_results(current_directory,Add_on_paths,forecast_idxs,SampleSize_idxs,models=["Rule","Det","Sto","Feature","Oracle"]):
     
     # Add_on_paths list
-
-    acceptance_count = ["acceptance_FD2_down","acceptance_FD2_up","acceptance_FD1_down","acceptance_FD1_up"]
+    
+    acceptance = ["acceptance_FD2_down","acceptance_FD2_up","","","acceptance_FD1_down","acceptance_FD1_up"]
     bid_quantities   = ["b_FD2_dn","b_FD2_up","b_DA_dn","b_DA_up","b_FD1_dn","b_FD1_up"]
     #models = ["Rule","Det","Sto","Feature","Oracle"]
-    Array_Acceptance = np.zeros((len(acceptance_count),24, 88, 5,len(Add_on_paths)))
+    #Array_Acceptance = np.zeros((len(acceptance_count),24, 88, 5,len(Add_on_paths)))
     Array_Bid = np.zeros((len(bid_quantities),24, 88, 5,len(Add_on_paths)))
+    Array_Accepted_Bid = np.zeros((len(bid_quantities),24, 88, 5,len(Add_on_paths)))
     Array_Comp = np.zeros((1, 88, 5,len(Add_on_paths)))
     Model = ["Rule","Det","Sto","Feature","Oracle"]
     model_idx = [i for i, m in enumerate(Model) if m in models]
@@ -393,12 +394,19 @@ def Collect_bid_results(current_directory,Add_on_paths,forecast_idx,SampleSize_i
     for path,Add_on_path in enumerate(Add_on_paths):
         #for s,SampleSize_idx in enumerate(SampleSize_idxs):
 
-        ids = [f'f{forecast_idx}_d{SampleSize_idxs[path]}_upd{d}_t{d+1}' for d in range(0,88)]
 
+        
+        ids = [f'f{forecast_idxs[path]}_d{SampleSize_idxs[path]}_upd{d}_t{d+1}' for d in range(0,88)]
 
 
         # Load each id at a time
         for d,id in enumerate(ids):
+
+            if Add_on_path == "\\Results\\Forecast with perfect acceptance":
+                models = models=["Rule","Det","Sto","Feature","Oracle"]
+                model_idx = [i for i, m in enumerate(Model) if m in models]
+                models = [Model[i] for i, m in enumerate(Model) if m in models]
+
             results = import_test_case(current_directory, Add_on_path, id,models=models)
             #print(results)
             #print("Import ", id)
@@ -412,22 +420,27 @@ def Collect_bid_results(current_directory,Add_on_paths,forecast_idx,SampleSize_i
                 for b,bid in enumerate(bid_quantities):
                     # print(results[model]['Bid'][bid])
                     #print(Array_Bid[b,:,d,m,s,path])
-                    
                     Array_Bid[b,:,d,m_idx,path] = results[model]['Bid'][bid]
-
+                    #print(bid)
+                    if bid != "b_DA_dn" and bid != "b_DA_up":
+                        #print(acceptance[b])
+                        Array_Accepted_Bid[b,:,d,m_idx,path] = results[model]['Bid'][bid] * results[model]['RT'][acceptance[b]]
+                    else:
+                        Array_Accepted_Bid[b,:,d,m_idx,path] = results[model]['Bid'][bid]
                 # Computation time
                 #print(results[model]['Bid']["time"])
                 if model == "Sto" or model == "Det" or model == "Feature":
-                    Array_Comp[0,:,m_idx,path] = results[model]['Bid']["time"]
+                    #print( results[model]['Bid']["time"])
+                    Array_Comp[0,d,m_idx,path] = results[model]['Bid']["time"]
                 else:
-                    Array_Comp[0,:,m_idx,path] = 0
+                    Array_Comp[0,d,m_idx,path] = 0
     
-    return Array_Acceptance, Array_Bid,Array_Comp
+    return Array_Accepted_Bid, Array_Bid,Array_Comp
 
 
 
 
-def Plot_average_bid_quantities(Array_Bid,MultipleModels=True,Selected_models = ["Rule", "Deterministic", "Stochastic", "Feature", "Oracle"],Names = [""] ,linestyle = ["-"]):
+def Plot_average_bid_quantities(Array_Bid,MultipleModels=True,Selected_models = ["Rule", "Deterministic", "Stochastic", "Feature", "Oracle"],Names = [""] ,linestyle = ["-"],pdf_name = 'plot' ,save = False):
     #  Array_Bid = np.empty((len(bid_quantities),24, 88, len(models),len(Add_on_paths)))
     Bid_mean = np.mean(Array_Bid, axis=2)
     Bid_std = np.std(Array_Bid, axis=2)
@@ -478,7 +491,7 @@ def Plot_average_bid_quantities(Array_Bid,MultipleModels=True,Selected_models = 
 
                     axs[row, col].plot(x, Bid_mean[b, :, model_idx[0],n], label=labelname,color=colors[n], linestyle = linestyle[n],linewidth=2.5)
             else:
-                axs[row, col].plot(x, Bid_mean[b, :, 1,n], label="y"+ " D",color=color[1], linestyle = "-",linewidth=2.5)
+                axs[row, col].plot(x, Bid_mean[b, :, 1,n], label="Det($y(\lambda,\widehat{\lambda})$)",color=color[1], linestyle = "-",linewidth=2.5)
             # axs[row, col].scatter(x, Acceptance_mean[1, :, m], label=model)  # Uncomment if needed
 
         axs[row, col].set_title(bid_quantities_label[b], fontsize=16)  # Set subplot title
@@ -515,7 +528,7 @@ def Plot_average_bid_quantities(Array_Bid,MultipleModels=True,Selected_models = 
 
     # Create a common legend outside the subplots
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    legend = fig.legend(handles, labels, loc='lower center', ncol=len(models), bbox_to_anchor=(0.5, -0.03),
+    legend = fig.legend(handles, labels, loc='lower center', ncol=len(Names), bbox_to_anchor=(0.5, -0.06),
                         prop={'size': 16})  # Adjust the fontsize of the legend here
 
 
@@ -528,225 +541,10 @@ def Plot_average_bid_quantities(Array_Bid,MultipleModels=True,Selected_models = 
 
 
     plt.tight_layout()  # Adjust spacing between subplots
-    plt.savefig('Bid_quantities.pdf', format="pdf", bbox_inches="tight")
-    plt.show()
 
-
-def plot_Profit_Test_For_Forecast(Array, xtick_names,SampleSize_index, marker_size = 2, marker_size_2 = 20):
-
-    Array = Array[:,SampleSize_index,:,:,:]
-    iteration_numbers = Array.shape[0]
-    x_length = Array.shape[0]
-    xlabel_name = 'Forecasts'
-    ax1_name = 'Profit for different forecasts and at different test days'
-    ax2_name = 'Mean profit for different forecasts'
-    xtick_range = range(0, x_length)
-        
-    # Set up the plot
-    #fig, ax = plt.subplots()
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 20), sharex=True)
-
-    # Define a list of colors for models
-    colors = ['red' , 'blue', 'green', 'orange','purple']
-    Model  = ['Rule', 'Det' , 'Sto'  , 'Feature' ,'oracle']
-
-    # Define a list of symbols for profits
-    symbols = ['o'  , 's' ]
-    Profit     = ['Exp', 'RT']
-
-    # Define a list of x-axis movement for each profit
-    xaxis_move = [-0.25,-0.2,-0.15,-0.1,-0.05, 0.05,0.1,0.15,0.2,0.25]
-
-
-
-    # Calculate the mean along the test day axis (axis=1)
-    mean_array_along_d = np.mean(Array, axis=1, keepdims=True)
-
-    # Iterate over d values
-    for d in range(iteration_numbers):
-        # Iterate over profit values
-        count = 0
-        for profit in range(len(Profit)):
-            # Iterate over model values
-            for model in range(len(Model)):
-                
-
-                data = Array[:, d, model, profit]
-
-                # Get the unique color and symbol based on the model and profit
-                color = colors[model]
-                symbol = symbols[profit]
-
-                # Calculate the modified x values based on the profit
-                
-                modified_x = list(range(x_length))  # Convert range object to a list
-                modified_x = [x + xaxis_move[count] for x in modified_x]
-                count = count + 1 # For modified_x
-
-                # Plot the data with the unique color and symbol
-                ax1.scatter(modified_x, data, color=color, marker=symbol,s=marker_size)
-
-
-    # Set y-axis label
-    ax1.set_ylabel('Profit [EUR]')
-
-    # Create a legend for colors and symbols
-    legend_handles = []
-    for model, color in enumerate(colors):
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', label=f'{Model[model]}', markerfacecolor=color, markersize=10))
-    for profit, symbol in enumerate(symbols):
-        legend_handles.append(Line2D([0], [0], marker=symbol, color='w', label=f'{Profit[profit]}', markerfacecolor='black', markersize=10))
-
-    # Add the legend to the plot outside the graph area
-    ax1.legend(handles=legend_handles, loc='upper right', bbox_to_anchor=(1.1, 0.7))
-
-    # The other subplot
-    count = 0
-    for profit in range(len(Profit)):
-        # Iterate over model values
-        for model in range(len(Model)):
-
-            # Extract the data for the current d, model, and profit
-            data = mean_array_along_d[:, 0, model, profit]
-
-            # Get the unique color and symbol based on the model and profit
-            color = colors[model]
-            symbol = symbols[profit]
-
-            # Calculate the modified x values based on the profit
-            modified_x = list(range(x_length))  # Convert range object to a list
-            modified_x = [x + xaxis_move[count] for x in modified_x]
-            count = count + 1  # For modified_x
-
-            # Plot the data with the unique color and symbol
-            #if model == 0 or model == 1 or model == 4: # if rule, det or 
-            ax2.scatter(modified_x, data, color=color, marker=symbol, s=marker_size_2)
-
-
-    # Set y-axis label
-    ax2.set_ylabel('Profit [EUR]')
-
-    # Set x-axis label
-    ax2.set_xlabel(xlabel_name)
-    ax2.set_xticks(xtick_range,xtick_names) 
-
-    # Set title for ax1
-    ax1.set_title(ax1_name)
-
-    # Set title for ax2
-    ax2.set_title(ax2_name)
-
-    # Show the plot
-    plt.show()
-
-
-
-def plot_Profit_Test_For_SampleSize(Array, xtick_names,Forecast_index, marker_size = 2, marker_size_2 = 20):
-    # Assuming Array[f, m,d,model,profit] is the four-dimensional array
-    Array = Array[Forecast_index,:,:,:,:]
-    iteration_numbers = Array.shape[0]
-    x_length = Array.shape[0]
-    xlabel_name = 'Training Sample'
-    ax1_name = 'Profit for different training sizes and at different test days'
-    ax2_name = 'Mean profit for different training sizes'
-    xtick_range = range(0, x_length)
-
-        
-    # Set up the plot
-    #fig, ax = plt.subplots()
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 20), sharex=True)
-
-    # Define a list of colors for models
-    colors = ['red' , 'blue', 'green', 'orange','purple']
-    Model  = ['Rule', 'Det' , 'Sto'  , 'Feature' ,'oracle']
-
-    # Define a list of symbols for profits
-    symbols = ['o'  , 's' ]
-    Profit     = ['Exp', 'RT']
-
-    # Define a list of x-axis movement for each profit
-    xaxis_move = [-0.25,-0.2,-0.15,-0.1,-0.05, 0.05,0.1,0.15,0.2,0.25]
-
-
-
-    # Calculate the mean along the test day axis (axis=1)
-    mean_array_along_d = np.mean(Array, axis=1, keepdims=True)
-
-    # Iterate over d values
-    for d in range(iteration_numbers):
-        # Iterate over profit values
-        count = 0
-        for profit in range(len(Profit)):
-            # Iterate over model values
-            for model in range(len(Model)):
-                
-
-                data = Array[:, d, model, profit]
-
-                # Get the unique color and symbol based on the model and profit
-                color = colors[model]
-                symbol = symbols[profit]
-
-                # Calculate the modified x values based on the profit
-                
-                modified_x = list(range(x_length))  # Convert range object to a list
-                modified_x = [x + xaxis_move[count] for x in modified_x]
-                count = count + 1 # For modified_x
-
-                # Plot the data with the unique color and symbol
-                ax1.scatter(modified_x, data, color=color, marker=symbol,s=marker_size)
-
-
-    # Set y-axis label
-    ax1.set_ylabel('Profit [EUR]')
-
-    # Create a legend for colors and symbols
-    legend_handles = []
-    for model, color in enumerate(colors):
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', label=f'{Model[model]}', markerfacecolor=color, markersize=10))
-    for profit, symbol in enumerate(symbols):
-        legend_handles.append(Line2D([0], [0], marker=symbol, color='w', label=f'{Profit[profit]}', markerfacecolor='black', markersize=10))
-
-    # Add the legend to the plot outside the graph area
-    ax1.legend(handles=legend_handles, loc='upper right', bbox_to_anchor=(1.1, 0.7))
-
-    # The other subplot
-    count = 0
-    for profit in range(len(Profit)):
-        # Iterate over model values
-        for model in range(len(Model)):
-
-            # Extract the data for the current d, model, and profit
-            data = mean_array_along_d[:, 0, model, profit]
-
-            # Get the unique color and symbol based on the model and profit
-            color = colors[model]
-            symbol = symbols[profit]
-
-            # Calculate the modified x values based on the profit
-            modified_x = list(range(x_length))  # Convert range object to a list
-            modified_x = [x + xaxis_move[count] for x in modified_x]
-            count = count + 1  # For modified_x
-
-            # Plot the data with the unique color and symbol
-            #if model == 0 or model == 1 or model == 4: # if rule, det or 
-            ax2.scatter(modified_x, data, color=color, marker=symbol, s=marker_size_2)
-
-
-    # Set y-axis label
-    ax2.set_ylabel('Profit [EUR]')
-
-    # Set x-axis label
-    ax2.set_xlabel(xlabel_name)
-    ax2.set_xticks(xtick_range,xtick_names) 
-
-    # Set title for ax1
-    ax1.set_title(ax1_name)
-
-    # Set title for ax2
-    ax2.set_title(ax2_name)
-
-    # Show the plot
+    if save == True:
+        plt.savefig('Bid_quantities' + pdf_name + '.pdf', format="pdf", bbox_inches="tight")
+     
     plt.show()
 
 
@@ -860,7 +658,7 @@ def bid_plots(bid_result, model, color, save):
     handles2, labels2 = ax2_1.get_legend_handles_labels()
     handles = handles1 + handles2
     labels = labels1 + labels2
-    plt.legend(handles, labels, loc='upper left', bbox_to_anchor=(0.1, -0.15), ncol=4)
+    plt.legend(handles, labels, loc='upper left', bbox_to_anchor=(0.1, -0.3), ncol=4)
 
     if save == True:
         plt.savefig(f'Result_plots/bid_plots_{model}.png', bbox_inches='tight')
@@ -1209,7 +1007,7 @@ def save_plots(current_directory,Add_on_path, choose_id, save, model, with_accep
             'FD1_dn': '#674ea7', # darkgreen
             'SOC': 'black'}
 
-    results = import_test_case(current_directory, Add_on_path, choose_id)
+    results = import_test_case(current_directory, Add_on_path, choose_id,model)
 
     #Plotting functions
     bid_plots(results[model]['Bid'], model, color, save)
@@ -1221,14 +1019,16 @@ def save_plots(current_directory,Add_on_path, choose_id, save, model, with_accep
     plot_exp_and_RT_profit(results, profit_plot, save)
     plot_battery_dynamics(results[model]['RT'], model, save)
     
+    
     #Print summary
+    '''
     result_summary = [["RT", results['Oracle']['RT']['profit'],results['Rule']['RT']['profit'], results['Det']['RT']['profit'], results['Sto']['RT']['profit'], results['Feature']['RT']['profit']],
                       ["Expected", sum(results['Oracle']['Bid']['obj_t']),sum(results['Rule']['Bid']['obj_t']), sum(results['Det']['Bid']['obj_t']), sum(results['Sto']['Bid']['obj_t'].flatten()), sum(results['Feature']['Bid']['obj_t'].flatten())]]
     headers = ["Oracle","Rule", "Deterministic", "Stochastic", "Feature"]
     table = tabulate(result_summary, headers, tablefmt="grid")
     if print_table == 'yes':
         print('Test case: ', choose_id)
-        print(table)
+        print(table)'''
 
     return results
 

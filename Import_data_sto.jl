@@ -15,6 +15,7 @@ function data_import_stochastic(data_import, forecast_data, Data_index,gamma, W1
     forecast_data_mod = copy(forecast_data)
     forecast_data_mod_prices_copy = copy(forecast_data[:,subset])
     forecast_data_mod_prices = forecast_data_mod_prices_copy.* gamma
+    print(forecast_data_mod_prices[145:147,subset])
 
     # Update the modified prices in the data_import_mod array
     forecast_data_mod[:, subset] = forecast_data_mod_prices

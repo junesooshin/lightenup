@@ -150,6 +150,9 @@ function stochastic_model(Data)
 end
 
 function create_bid_stochastic(Data, sto_solution)
+    pi1 = Data["pi1"]
+    pi2 = Data["pi2"]
+    pi3 = Data["pi3"]
     size_W1 = size(Data["f_FD1_up_tw"])[2]
     size_W2 = size(Data["f_FD1_up_tw"])[3]
     size_W3 = size(Data["f_FD1_up_tw"])[4]
@@ -160,9 +163,15 @@ function create_bid_stochastic(Data, sto_solution)
     p_FD2_up = mean(sto_solution["p_FD2_up"], dims=2)[:,1]
     p_FD2_dn = mean(sto_solution["p_FD2_dn"], dims=2)[:,1]
     b_DA_up = mean(sto_solution["p_DA_up"], dims=2)[:,1]
+    b_DA_up_all = sto_solution["p_DA_up"]
     b_DA_dn = mean(sto_solution["p_DA_dn"], dims=2)[:,1]
+    b_DA_dn_all = sto_solution["p_DA_dn"]
     b_FD1_up = mean(reshape(sto_solution["b_FD1_up"], (24, size_W1*size_W2)), dims=2)[:,1]
     b_FD1_dn = mean(reshape(sto_solution["b_FD1_dn"], (24, size_W1*size_W2)), dims=2)[:,1]
+    b_FD1_up_all = sto_solution["b_FD1_up"]
+    b_FD1_dn_all = sto_solution["b_FD1_dn"]
+
+
     p_FD1_up = mean(reshape(sto_solution["p_FD1_up"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
     p_FD1_dn = mean(reshape(sto_solution["p_FD1_dn"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
     p_all_up = mean(reshape(sto_solution["p_all_up"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
@@ -197,6 +206,23 @@ function create_bid_stochastic(Data, sto_solution)
     f_lambda_FD2_dn_mean = mean(reshape(sto_solution["f_FD2_dn_tw_input"], (24, size_W1)), dims=2)[:,1]
     f_lambda_FD1_up_mean = mean(reshape(sto_solution["f_FD1_up_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
     f_lambda_FD1_dn_mean = mean(reshape(sto_solution["f_FD1_dn_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
+#=
+    f_FD2_up_tw_input = reshape(sto_solution["f_FD2_up_tw_input"], (24, size_W1))
+    f_FD2_up_tw_input_w = pi1* f_FD2_up_tw_input
+    println(f_FD2_up_tw_input_w)
+    f_DA_t_mean = sum( reshape(sto_solution["f_DA_tw_input"], (24, size_W1*size_W2)), dims=2 )[:,1]
+    f_lambda_FD2_up_mean = mean( pi1* reshape(sto_solution["f_FD2_up_tw_input"], (24, size_W1)), dims=2)[:,1]
+    f_lambda_FD2_dn_mean = mean(reshape(sto_solution["f_FD2_dn_tw_input"], (24, size_W1)), dims=2)[:,1]
+    f_lambda_FD1_up_mean = mean(reshape(sto_solution["f_FD1_up_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
+    f_lambda_FD1_dn_mean = mean(reshape(sto_solution["f_FD1_dn_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
+=#
+
+    gamma = 0.85
+    f_DA_t = gamma*f_DA_t_mean
+    f_lambda_FD2_up = gamma*f_lambda_FD2_up_mean
+    f_lambda_FD2_dn =gamma*f_lambda_FD2_dn_mean
+    f_lambda_FD1_up = gamma*f_lambda_FD1_up_mean
+    f_lambda_FD1_dn = gamma*f_lambda_FD1_dn_mean
 
     #Calculate expected profit
     G_FD2_t = f_lambda_FD2_up.*p_FD2_up .+ f_lambda_FD2_dn.*p_FD2_dn 
@@ -217,6 +243,11 @@ function create_bid_stochastic(Data, sto_solution)
                     "b_DA_dn"  => b_DA_dn,
                     "b_FD1_up" => b_FD1_up, 
                     "b_FD1_dn" => b_FD1_dn,
+                    "b_DA_up_all" => b_DA_up_all,
+                    "b_DA_dn_all" => b_DA_dn_all,
+                    "b_FD1_up_all" => b_FD1_up_all,
+                    "b_FD1_dn_all" => b_FD1_dn_all,
+
                     "f_lambda_FD2_up" => f_lambda_FD2_up, 
                     "f_lambda_FD2_dn" => f_lambda_FD2_dn,
                     "f_lambda_FD1_up" => f_lambda_FD1_up, 
@@ -232,6 +263,8 @@ function create_bid_stochastic(Data, sto_solution)
                     "f_FD1_y_dn_t" => f_FD1_y_dn_t,
                     "f_FD2_y_up_t" => f_FD2_y_up_t,
                     "f_FD2_y_dn_t" => f_FD2_y_dn_t,
+                
+
                     #Inputs
                     "f_FD2_up_tw_input" => sto_solution["f_FD2_up_tw_input"],
                     "f_FD2_dn_tw_input" => sto_solution["f_FD2_dn_tw_input"],

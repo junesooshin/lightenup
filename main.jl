@@ -209,7 +209,7 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                         end
 
                         if issubset(["feature"],Models_range)  == true
-                            Architectures = ["GA"] # General or Hourly architecture of the coefficients
+                            Architectures = ["HA"] # General or Hourly architecture of the coefficients
                             for Architecture in Architectures
                                 
                                 result_feature = run_feature(processed_data, forecast_data, Architecture , d_train_set, moving_day,gamma, test_day_2023, scaling,Acceptance,ForecastCorrection_hyperparameter)
@@ -261,13 +261,13 @@ end
 gamma_range = [0.85]
 #gamma_range = [1.00]
 
-Models_range = ["sto"]
-#Models_range = ["rule","det","oracle","sto","feature"]
+#Models_range = ["sto"]
+Models_range = ["rule","det","oracle","sto"]
 
 #Default parameters for 'run_all' function
 #d_train_set_range = [80]
 #d_train_set_range = [2,5,10,20,40,80,160,320,365]
-d_train_set_range = [5]
+d_train_set_range = [0]
 #d_train_set_range = [3,5,8,10,12]
 
 
