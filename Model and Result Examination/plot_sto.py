@@ -12,6 +12,8 @@ Add_on_path = "\\Results\\Sto 2 Sample\\2\\"
 current_directory = "C:\\Users\\Daniel  BV\\Desktop\\Thesis"  #
 choose_id = 'f1_d2_upd41_t42'
 
+
+# check changes
 model = 'Sto'
 results = import_test_case(current_directory, Add_on_path, choose_id,models=model)
 bid_result = results[model]['Bid']

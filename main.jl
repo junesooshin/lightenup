@@ -77,7 +77,6 @@ function run_sto(processed_data, forecast_data, d_train_set, moving_day,gamma, s
     #Stochastic Model
     Data_index = Define_Training_and_Test_index(d_train_set, moving_day)
     data_sto = data_import_stochastic(processed_data, forecast_data, Data_index,gamma, size_W1, size_W2, size_W3,false,false,Acceptance,"With forecast in input")
-    #data_sto = data_import_stochastic(processed_data, forecast_data, Data_index, size_W1, size_W2, size_W3,"Without forecast in input")
 
     sto_solution = stochastic_model(data_sto)
     Bid_Results_sto = create_bid_stochastic(data_sto, sto_solution)
@@ -209,7 +208,7 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
                         end
 
                         if issubset(["feature"],Models_range)  == true
-                            Architectures = ["HA"] # General or Hourly architecture of the coefficients
+                            Architectures = ["GA"] # General or Hourly architecture of the coefficients
                             for Architecture in Architectures
                                 
                                 result_feature = run_feature(processed_data, forecast_data, Architecture , d_train_set, moving_day,gamma, test_day_2023, scaling,Acceptance,ForecastCorrection_hyperparameter)
@@ -257,34 +256,26 @@ function run_all(Models_range, d_train_set_range, moving_day_range,forecast_rang
     return RT_profit, Exp_profit
 end
 
-#gamma_range = [0.8,0.83,0.85,0.87,0.9,0.93,0.95,0.97, 1.0,1.05,1.1]
-gamma_range = [0.85]
+gamma_range = [0.6,0.7,0.75,0.8,0.85,0.9,0.95, 1.0,1.05,1.1,1.2]
+#gamma_range = [0.85]
+#gamma_range = [1.0,1.05,1.1,1.2]
 #gamma_range = [1.00]
 
 #Models_range = ["sto"]
-Models_range = ["rule","det","oracle","sto"]
+Models_range = ["rule","det","oracle","sto","feature"]
 
 #Default parameters for 'run_all' function
 #d_train_set_range = [80]
 #d_train_set_range = [2,5,10,20,40,80,160,320,365]
-d_train_set_range = [0]
-#d_train_set_range = [3,5,8,10,12]
+d_train_set_range = [5]
 
 
 #moving_day_range = 0   #(within range 0:87)
 moving_day_range = 0:87 #(within range 0:87)
 
 forecast_range = ["forecast_all1"]
-#forecast_range = ["forecast_all1_acc_perf"]
-
-#forecast_range = ["forecast_all2"]
-#forecast_range = ["forecast_allfeature"]
 
 
-# Settings for different forecast and acceptance:
-#forecast_range = ["forecast_all0","forecast_all2"] # load_data("real")
-#forecast_range = ["forecast_all0_acc","forecast_all2_acc"] # load_data("real_acc")
-#forecast_range = ["forecast_all0","forecast_all1_acc_perf"] # load_data("real_acc")
 
 Acceptance = "Volume" # "Junes" , "100" , "Volume"
 ForecastCorrection_hyperparameter = false # false , 1 

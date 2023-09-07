@@ -163,7 +163,7 @@ def plot_each_test_day_Profit(data,models,x_axis,drawstyle,save = False):
     
 
 def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Deterministic', 'Stochastic', 'Feature','Oracle'], x_axis_label = "Forecasts", x_axis_selection = [0,1,2], x_axis_tick_label = [1,2,3], 
-                     y_axis_label =  'Profit [\u20AC/day]', Selected_Profit = ['Anticipated', 'Realized'], 
+                     y_axis_label =  'Profit [\u20AC/day/MWh]', Selected_Profit = ['Anticipated', 'Realized'], 
                      barwidth = 0.1, ylim = "", errorbar = True,
                      bbox_to_anchor=(1.02, 0.9),legends = ['Rule', 'Deterministic', 'Stochastic', 'Feature','Oracle','Anticipated','Realized'], 
                      ShowEachTestDay = False, pdf_name = 'Profit_Bar_plot' ,save = False):
@@ -208,6 +208,8 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
     
     mean_values = np.mean(Array, axis=2)
     std_values = np.std(Array, axis=2)
+    quantile25_values = np.quantile(Array,0.25,axis=2)
+    quantile75_values = np.quantile(Array,0.75,axis=2)
 
     if PlotCase == "":
         x_axis_label = '' 
@@ -229,6 +231,8 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
     edgecolor = "black"
     linewidth = 4
     
+    BatterySize = 1 # MWh
+
     # Build the bar sizing and spacing
     bar_list = [i*0 for i in range(bar_count)]
     spacing = barwidth/10
@@ -253,7 +257,7 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
     # Plot value of the oracle model
     if "Oracle" in Selected_models:
         mean_value = np.mean(Array[0, 0, :, 4, 1,0])
-        lines = ax.hlines(mean_value, 0 - size_around_tick + 4 *spacing, len(x_axis) - 1 + size_around_tick, color=linecolor, linestyle=linestyle, linewidth=linewidth)
+        lines = ax.hlines(mean_value/BatterySize, 0 - size_around_tick + 4 *spacing, len(x_axis) - 1 + size_around_tick, color=linecolor, linestyle=linestyle, linewidth=linewidth)
 
 
     for x,xaxis  in enumerate(x_axis_selection):
@@ -295,16 +299,22 @@ def plot_profit_Test(Array, PlotCase = "", Selected_models = ['Rule', 'Determini
 
                 
                 # Define the height of the bar
-                bar_height = mean_values[f,s,j_mod,k_mod,m]
-                error_value = std_values[f,s,j_mod,k_mod,m]
+                bar_height = mean_values[f,s,j_mod,k_mod,m]/BatterySize
+                lower_error = quantile25_values[f,s,j_mod,k_mod,m]/BatterySize
+                upper_error = quantile75_values[f,s,j_mod,k_mod,m]/BatterySize
 
+                error_value = std_values[f,s,j_mod,k_mod,m]/BatterySize
+                lower_error = error_value
+                upper_error = error_value
                 
 
                 ax.bar(bar_left, bar_height, width=barwidth, color=color, hatch=fill_pattern, align='edge', edgecolor=edgecolor)
 
                 x_position = bar_left + barwidth/2
                 if errorbar == True:
-                    ax.errorbar(x_position, bar_height, yerr=error_value, fmt='none', ecolor='black', capsize=4)
+
+                    asymmetric_error = [[lower_error], [upper_error]]
+                    ax.errorbar(x_position, bar_height, yerr=asymmetric_error, fmt='none', ecolor='black', capsize=4)
 
                 if ShowEachTestDay == True:
                     for d,val in enumerate(test_days):

@@ -71,23 +71,14 @@ function stochastic_model(Data)
             @objective(m_sto, Max, sum(G_FD2[t] + G_DA[t] + G_FD1[t] - C_Deg[t] for t in T) )
 
             @constraint(m_sto, Gain_FD2[t in T], G_FD2[t] == sum(pi1[w1]*(f_FD2_up_tw[t,w1]*p_FD2_up[t,w1] + f_FD2_dn_tw[t,w1]*p_FD2_dn[t,w1])  for w1 in W1))
-            #@constraint(m_sto, Gain_FD2[t in T], G_FD2[t] == sum(pi1[w1]*( f_FD2_dn_tw[t,w1]*p_FD2_dn[t,w1])  for w1 in W1))
-
             @constraint(m_sto, Gain_DA[t in T], G_DA[t] == sum(pi2[w1,w2]*(f_DA_tw[t,w1,w2]*(p_DA_up[t,w1]-p_DA_dn[t,w1])) for w1 in W1, w2 in W2)) 
-
             @constraint(m_sto, Gain_FD1[t in T], G_FD1[t] == sum(pi3[w1,w2,w3]*(f_FD1_up_tw[t,w1,w2,w3]*p_FD1_up[t,w1,w2,w3]   + f_FD1_dn_tw[t,w1,w2,w3]*p_FD1_dn[t,w1,w2,w3]) for w1 in W1, w2 in W2, w3 in W3)) 
-            #@constraint(m_sto, Gain_FD1[t in T], G_FD1[t] == sum(pi3[w1,w2,w3]*( f_FD1_dn_tw[t,w1,w2,w3]*p_FD1_dn[t,w1,w2,w3]) for w1 in W1, w2 in W2, w3 in W3)) 
-
-
             @constraint(m_sto, Deg[t in T], C_Deg[t] == sum(pi3[w1,w2,w3]*(p_all_dn[t,w1,w2,w3] + p_all_up[t,w1,w2,w3]) for w1 in W1, w2 in W2, w3 in W3)/(2*SOC_max) * Cost_per_cycle) # Constraint to set G_Bal
-
-
 
             @constraint(m_sto, p_all_dn_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_all_dn[t,w1,w2,w3] == p_DA_dn[t,w1] + f_a_dn_tw[t,w1,w2,w3]*(p_FD1_dn[t,w1,w2,w3] + p_FD2_dn[t,w1])) # Constraint to keep track of the summation of all the charge
             @constraint(m_sto, p_all_up_con[t in T, w1 in W1, w2 in W2, w3 in W3], p_all_up[t,w1,w2,w3] == p_DA_up[t,w1] + f_a_up_tw[t,w1,w2,w3]*(p_FD1_up[t,w1,w2,w3] + p_FD2_up[t,w1])) # Constraint to keep track of the summation of all the charge
 
             @constraint(m_sto, SOC_con[t in T2, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] == SOC[t-1,w1,w2,w3] + eta_ch*p_all_dn[t,w1,w2,w3] - eta_dis*p_all_up[t,w1,w2,w3] ) # Constraint State of charge
-
             @constraint(m_sto, SOC_con_ini[w1 in W1, w2 in W2, w3 in W3], SOC[t_ini,w1,w2,w3] == SOC_0 + eta_ch*p_all_dn[t_ini,w1,w2,w3] - eta_dis*p_all_up[t_ini,w1,w2,w3] ) # Constraint State of charge
 
             @constraint(m_sto, SOC_cap_con[t in T, w1 in W1, w2 in W2, w3 in W3], SOC[t,w1,w2,w3] >= (p_DA_up[t,w1] + b_FD1_up[t,w1,w2] + b_FD2_up[t]) ) # To ensure that enough energy in battery for upregulation/discharging. The SOC need to be bigger or equal to all the bids combined for that hour
@@ -192,37 +183,19 @@ function create_bid_stochastic(Data, sto_solution)
     f_lambda_FD1_dn = Data["f_FD1_dn_t"][:,1] #Flatten array
 
     # Mean bid prices
-
-    #=
-                "f_FD2_up_tw_input" => f_FD2_up_tw[T,W1],
-            "f_FD2_dn_tw_input" => f_FD2_dn_tw[T,W1],
-            "f_DA_tw_input" => f_DA_tw[T,W1,W2],
-            "f_FD1_up_tw_input" => f_FD1_up_tw[T,W1,W2,W3],
-            "f_FD1_dn_tw_input" => f_FD1_dn_tw[T,W1,W2,W3],
-    =#
     
     f_DA_t_mean = mean(reshape(sto_solution["f_DA_tw_input"], (24, size_W1*size_W2)), dims=2)[:,1]
     f_lambda_FD2_up_mean = mean(reshape(sto_solution["f_FD2_up_tw_input"], (24, size_W1)), dims=2)[:,1]
     f_lambda_FD2_dn_mean = mean(reshape(sto_solution["f_FD2_dn_tw_input"], (24, size_W1)), dims=2)[:,1]
     f_lambda_FD1_up_mean = mean(reshape(sto_solution["f_FD1_up_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
     f_lambda_FD1_dn_mean = mean(reshape(sto_solution["f_FD1_dn_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
-#=
-    f_FD2_up_tw_input = reshape(sto_solution["f_FD2_up_tw_input"], (24, size_W1))
-    f_FD2_up_tw_input_w = pi1* f_FD2_up_tw_input
-    println(f_FD2_up_tw_input_w)
-    f_DA_t_mean = sum( reshape(sto_solution["f_DA_tw_input"], (24, size_W1*size_W2)), dims=2 )[:,1]
-    f_lambda_FD2_up_mean = mean( pi1* reshape(sto_solution["f_FD2_up_tw_input"], (24, size_W1)), dims=2)[:,1]
-    f_lambda_FD2_dn_mean = mean(reshape(sto_solution["f_FD2_dn_tw_input"], (24, size_W1)), dims=2)[:,1]
-    f_lambda_FD1_up_mean = mean(reshape(sto_solution["f_FD1_up_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
-    f_lambda_FD1_dn_mean = mean(reshape(sto_solution["f_FD1_dn_tw_input"], (24, size_W1*size_W2*size_W3)), dims=2)[:,1]
-=#
 
-    gamma = 0.85
-    f_DA_t = gamma*f_DA_t_mean
-    f_lambda_FD2_up = gamma*f_lambda_FD2_up_mean
-    f_lambda_FD2_dn =gamma*f_lambda_FD2_dn_mean
-    f_lambda_FD1_up = gamma*f_lambda_FD1_up_mean
-    f_lambda_FD1_dn = gamma*f_lambda_FD1_dn_mean
+
+    #f_DA_t = gamma*f_DA_t_mean
+    #f_lambda_FD2_up = gamma*f_lambda_FD2_up_mean
+    #f_lambda_FD2_dn = gamma*f_lambda_FD2_dn_mean
+    #f_lambda_FD1_up = gamma*f_lambda_FD1_up_mean
+    #f_lambda_FD1_dn = gamma*f_lambda_FD1_dn_mean
 
     #Calculate expected profit
     G_FD2_t = f_lambda_FD2_up.*p_FD2_up .+ f_lambda_FD2_dn.*p_FD2_dn 
